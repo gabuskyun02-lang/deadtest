@@ -22,7 +22,7 @@ local function _checkIntegrity()
     local critical = {
         {name = "pcall", fn = pcall},
         {name = "Instance", fn = Instance.new},
-        {name = "TweenService", fn = game:GetService("TweenService")},
+        {name = "TweenService", fn = game:GetService("TweenService").Create},
         {name = "debug", fn = debug.info}
     }
     for _, item in ipairs(critical) do
@@ -1076,7 +1076,7 @@ function AestheticUI:CreateDropdown(section, config)
     local opened = false
     
     local container = createInstance("Frame", {
-        Size = UDim2.new(1, 0, 0, 55),
+        Size = UDim2.new(1, 0, 0, 56),
         BackgroundTransparency = 1,
         ClipsDescendants = false,
         Parent = section.Content
@@ -1095,7 +1095,7 @@ function AestheticUI:CreateDropdown(section, config)
     
     local dropBtn = createInstance("TextButton", {
         Size = UDim2.new(1, 0, 0, 30),
-        Position = UDim2.new(0, 0, 0, 22),
+        Position = UDim2.new(0, 0, 0, 24),
         BackgroundColor3 = Theme.BackgroundSecondary,
         Text = "",
         Parent = container
@@ -1541,14 +1541,14 @@ function AestheticUI:CreateColorPicker(section, config)
     local pickerOpen = false
     
     local container = createInstance("Frame", {
-        Size = UDim2.new(1, 0, 0, 28),
+        Size = UDim2.new(1, 0, 0, 32), -- Increased from 28 to 32
         BackgroundTransparency = 1,
         ClipsDescendants = false,
         Parent = section.Content
     })
     
     createInstance("TextLabel", {
-        Size = UDim2.new(1, -50, 1, 0),
+        Size = UDim2.new(1, -55, 1, 0), -- Extra padding for the button
         BackgroundTransparency = 1,
         Text = text,
         TextColor3 = Theme.Text,
