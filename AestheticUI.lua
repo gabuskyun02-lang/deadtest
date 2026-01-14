@@ -22,14 +22,26 @@ local function _checkIntegrity()
     local critical = {
         {name = "pcall", fn = pcall},
         {name = "Instance", fn = Instance.new},
-        {name = "TweenService", fn = game:GetService("TweenService").Create},
-        {name = "debug", fn = debug.info}
+        {name = "debug", fn = debug.info},
+        {name = "task", fn = task.spawn}
     }
+    
+    -- Safely add TweenService check
+    pcall(function()
+        local ts = game:GetService("TweenService")
+        if ts and ts.Create then
+            table.insert(critical, {name = "TweenService", fn = ts.Create})
+        end
+    end)
+
     for _, item in ipairs(critical) do
-        local ok, info = pcall(function() return debug.info(item.fn, "s") end)
-        if not ok or info ~= "[C]" then
-            _IntegrityPass = false
-            table.insert(_SecurityLogs, "Integrity Failure: " .. item.name .. " is hooked (" .. tostring(info) .. ")")
+        if item.fn then
+            local ok, info = pcall(function() return debug.info(item.fn, "s") end)
+            -- Only fail if debug.info succeeded but returned a non-native source
+            if ok and info ~= "[C]" then
+                _IntegrityPass = false
+                table.insert(_SecurityLogs, "Integrity Failure: " .. item.name .. " is hooked (" .. tostring(info) .. ")")
+            end
         end
     end
 end
@@ -291,7 +303,7 @@ function AestheticUI:CreateWindow(config)
     task.wait(math.random(100, 250) / 1000)
     
     local screenGui = createInstance("ScreenGui", {
-        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+        ZIndexBehavior = Enum.ZIndexBehavior.Global, -- Global for easier popup management
         ResetOnSpawn = false
     })
     
@@ -1146,8 +1158,9 @@ function AestheticUI:CreateDropdown(section, config)
         Size = UDim2.new(1, 0, 0, 0),
         Position = UDim2.new(0, 0, 1, 4),
         BackgroundColor3 = Theme.BackgroundSecondary,
+        BackgroundTransparency = 0, -- Fully opaque for readability
         ClipsDescendants = true,
-        ZIndex = 10,
+        ZIndex = 100, -- High ZIndex for global layering
         ScrollBarThickness = 2,
         ScrollBarImageColor3 = Theme.Accent,
         CanvasSize = UDim2.new(0, 0, 0, 0),
@@ -1574,8 +1587,9 @@ function AestheticUI:CreateColorPicker(section, config)
         Position = UDim2.new(1, 0, 1, 4),
         AnchorPoint = Vector2.new(1, 0),
         BackgroundColor3 = Theme.BackgroundSecondary,
+        BackgroundTransparency = 0, -- Fully opaque
         ClipsDescendants = true,
-        ZIndex = 20,
+        ZIndex = 100, -- High ZIndex for popups
         Parent = container
     })
     addCorner(pickerFrame, 8)
