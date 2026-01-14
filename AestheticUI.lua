@@ -166,6 +166,7 @@ local function createNotificationContainer(parent)
         Size = UDim2.new(0, 300, 1, -20),
         Position = UDim2.new(1, -310, 0, 10),
         BackgroundTransparency = 1,
+        ZIndex = 6000,
         Parent = parent
     })
     createInstance("UIListLayout", {
@@ -415,21 +416,20 @@ function AestheticUI:CreateWindow(config)
     })
     addCorner(minimizeBtn, 6)
     
-    local minimized = false
     minimizeBtn.MouseEnter:Connect(function()
         tween(minimizeBtn, {BackgroundTransparency = 0.3}, TweenPresets.Quick)
     end)
     minimizeBtn.MouseLeave:Connect(function()
         tween(minimizeBtn, {BackgroundTransparency = 0.8}, TweenPresets.Quick)
     end)
-    minimizeBtn.MouseButton1Click:Connect(function()
-        minimized = not minimized
-        if minimized then
-            tween(mainFrame, {Size = UDim2.new(0, size.X.Offset, 0, 40)}, TweenPresets.Spring)
-        else
-            tween(mainFrame, {Size = size}, TweenPresets.Spring)
+    
+    local function toggleVisibility()
+        if Window.Toggle then
+            Window:Toggle()
         end
-    end)
+    end
+    
+    minimizeBtn.MouseButton1Click:Connect(toggleVisibility)
     
     -- Dragging & Resizing
     local dragging, dragInput, dragStart, startPos
@@ -583,7 +583,7 @@ function AestheticUI:CreateWindow(config)
         Size = UDim2.new(0, 0, 0, 20),
         BackgroundColor3 = Theme.BackgroundSecondary,
         Visible = false,
-        ZIndex = 100,
+        ZIndex = 5000,
         Parent = screenGui
     })
     addCorner(tooltip, 4)
@@ -596,7 +596,7 @@ function AestheticUI:CreateWindow(config)
         TextColor3 = Theme.Text,
         TextSize = 11,
         Font = Enum.Font.Gotham,
-        ZIndex = 101,
+        ZIndex = 5001,
         Parent = tooltip
     })
     
@@ -1226,7 +1226,7 @@ function AestheticUI:CreateDropdown(section, config)
             BackgroundColor3 = Theme.Accent,
             BackgroundTransparency = 1,
             Text = "",
-            ZIndex = 11,
+            ZIndex = 101, -- Must be > parent ZIndex (100)
             Parent = optionsFrame
         })
         createInstance("TextLabel", {
@@ -1640,7 +1640,7 @@ function AestheticUI:CreateColorPicker(section, config)
         Size = UDim2.new(1, -16, 0, 120),
         Position = UDim2.new(0, 8, 0, 8),
         BackgroundColor3 = Color3.fromHSV(h, 1, 1),
-        ZIndex = 21,
+        ZIndex = 101, -- Must be > pickerFrame (100)
         Parent = pickerFrame
     })
     addCorner(satValBox, 4)
@@ -1655,7 +1655,7 @@ function AestheticUI:CreateColorPicker(section, config)
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundColor3 = Color3.new(0, 0, 0),
         BackgroundTransparency = 0,
-        ZIndex = 22,
+        ZIndex = 102,
         Parent = satValBox
     })
     addCorner(satValOverlay, 4)
@@ -1671,7 +1671,7 @@ function AestheticUI:CreateColorPicker(section, config)
         Position = UDim2.new(s, 0, 1 - v, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundColor3 = Theme.Text,
-        ZIndex = 23,
+        ZIndex = 103,
         Parent = satValBox
     })
     addCorner(satValCursor, 5)
@@ -1682,7 +1682,7 @@ function AestheticUI:CreateColorPicker(section, config)
         Size = UDim2.new(1, -16, 0, 16),
         Position = UDim2.new(0, 8, 0, 136),
         BackgroundColor3 = Color3.new(1, 1, 1),
-        ZIndex = 21,
+        ZIndex = 101, -- Must be > pickerFrame (100)
         Parent = pickerFrame
     })
     addCorner(hueSlider, 4)
@@ -1705,7 +1705,7 @@ function AestheticUI:CreateColorPicker(section, config)
         Position = UDim2.new(h, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundColor3 = Theme.Text,
-        ZIndex = 22,
+        ZIndex = 102,
         Parent = hueSlider
     })
     addCorner(hueCursor, 2)
