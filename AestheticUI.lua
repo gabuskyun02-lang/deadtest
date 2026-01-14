@@ -608,6 +608,9 @@ function AestheticUI:CreateWindow(config)
     local WindowMeta = getmetatable(WindowProxy)
     
     WindowMeta.__index = Window
+    WindowMeta.__newindex = function(_, k, v)
+        Window[k] = v
+    end
     WindowMeta.__metatable = "The metatable is locked"
     WindowMeta.__tostring = function() return "AestheticUI_Window" end
     
