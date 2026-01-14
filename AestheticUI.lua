@@ -701,7 +701,7 @@ function AestheticUI:CreateTab(window, config)
         end
     end)
     
-    tabBtn.MouseButton1Click:Connect(function()
+    local function selectTab()
         if window.ActiveTab then
             window.ActiveTab.Page.Visible = false
             tween(window.ActiveTab.Button, {BackgroundTransparency = 1}, TweenPresets.Quick)
@@ -714,11 +714,13 @@ function AestheticUI:CreateTab(window, config)
         tabPage.Visible = true
         tween(tabBtn, {BackgroundTransparency = 0.7}, TweenPresets.Smooth)
         tween(tabLabel, {TextColor3 = Theme.AccentGlow}, TweenPresets.Quick)
-    end)
+    end
+    
+    tabBtn.MouseButton1Click:Connect(selectTab)
     
     -- Auto-select first tab
     if #window.Tabs == 0 then
-        tabBtn.MouseButton1Click:Fire()
+        selectTab()
     end
     
     table.insert(window.Tabs, Tab)
