@@ -431,9 +431,33 @@ function AestheticUI:CreateWindow(config)
         end
     end)
     
-    -- Dragging
+    -- Dragging & Resizing
     local dragging, dragInput, dragStart, startPos
+    local resizing, resizeStartPos, resizeStartSize
     
+    local resizeHandle = createInstance("Frame", {
+        Size = UDim2.new(0, 20, 0, 20),
+        Position = UDim2.new(1, 0, 1, 0),
+        AnchorPoint = Vector2.new(1, 1),
+        BackgroundTransparency = 1,
+        ZIndex = 50,
+        Parent = mainFrame
+    })
+    
+    -- Visual indicator for resize handle
+    local resizeIcon = createInstance("TextLabel", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = "◢",
+        TextColor3 = Theme.Accent,
+        TextTransparency = 0.8,
+        TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Right,
+        TextYAlignment = Enum.TextYAlignment.Bottom,
+        ZIndex = 51,
+        Parent = resizeHandle
+    })
+
     titleBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
@@ -447,16 +471,30 @@ function AestheticUI:CreateWindow(config)
         end
     end)
     
-    titleBar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInput = input
+    resizeHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            resizing = true
+            resizeStartPos = input.Position
+            resizeStartSize = mainFrame.Size
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    resizing = false
+                end
+            end)
         end
     end)
     
     UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            if dragging then
+                local delta = input.Position - dragStart
+                mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            elseif resizing then
+                local delta = input.Position - resizeStartPos
+                local newWidth = math.max(400, resizeStartSize.X.Offset + delta.X)
+                local newHeight = math.max(300, resizeStartSize.Y.Offset + delta.Y)
+                mainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
+            end
         end
     end)
     
@@ -518,8 +556,10 @@ function AestheticUI:CreateWindow(config)
         self._visible = not self._visible
         if self._visible then
             mainFrame.Visible = true
-            tween(mainFrame, {Size = size, BackgroundTransparency = 0.05}, TweenPresets.Spring)
+            local targetSize = self._lastSize or size
+            tween(mainFrame, {Size = targetSize, BackgroundTransparency = 0.05}, TweenPresets.Spring)
         else
+            self._lastSize = mainFrame.Size -- Store current size before hiding
             local t = tween(mainFrame, {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1}, TweenPresets.Quick)
             t.Completed:Connect(function()
                 if not self._visible then mainFrame.Visible = false end
