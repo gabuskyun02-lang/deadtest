@@ -160,7 +160,7 @@ end
 
 local function addStroke(parent, color, thickness)
     return createInstance("UIStroke", {
-        Color = color or Theme.Border,
+        Color = color or Theme.BorderSoft,
         Thickness = thickness or 1,
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
         Parent = parent
@@ -908,12 +908,16 @@ function AestheticUI:CreateWindow(config)
     end)
     
     -- Tab container
-    local tabContainer = createInstance("Frame", {
+    local tabContainer = createInstance("ScrollingFrame", {
         Size = UDim2.new(0, 130, 1, -50),
         Position = UDim2.new(0, 8, 0, 45),
         BackgroundColor3 = Theme.SurfaceAlt,
         BackgroundTransparency = 0.78,
         ClipsDescendants = true,
+        ScrollBarThickness = 2,
+        ScrollBarImageColor3 = Theme.Accent,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
         Parent = mainFrame
     })
     addCorner(tabContainer, Radius.Container)
@@ -952,6 +956,7 @@ function AestheticUI:CreateWindow(config)
         titleLabel.TextColor3 = Theme.Text
         tabContainer.BackgroundColor3 = Theme.SurfaceAlt
         tabStroke.Color = Theme.BorderSoft
+        tabContainer.ScrollBarImageColor3 = Theme.Accent
     end)
     
     -- Window object
@@ -3305,13 +3310,13 @@ end
 function AestheticUI:CreateSeparator(section)
     local separator = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 1),
-        BackgroundColor3 = Theme.Border,
+        BackgroundColor3 = Theme.BorderSoft,
         BorderSizePixel = 0,
         Parent = section.Content
     })
     registerTheme(function()
         if separator.Parent == nil then return end
-        separator.BackgroundColor3 = Theme.Border
+        separator.BackgroundColor3 = Theme.BorderSoft
     end)
     return separator
 end
@@ -3559,20 +3564,20 @@ end
 
 -- [ADVANCED ANTI-DETECTION] Metatable Locking
 -- Prevent AC from inspecting the library's internal structure
-    if newproxy then
-        local AestheticUIProxy = newproxy(true)
-        local AestheticUIMeta = getmetatable(AestheticUIProxy)
+if newproxy then
+    local AestheticUIProxy = newproxy(true)
+    local AestheticUIMeta = getmetatable(AestheticUIProxy)
 
-        AestheticUIMeta.__index = AestheticUI
-        AestheticUIMeta.__newindex = function(_, k, v)
-            -- Prevent modification of core library functions
-            rawset(AestheticUI, k, v)
-        end
-        AestheticUIMeta.__metatable = "The metatable is locked"
-        AestheticUIMeta.__tostring = function() return "AestheticUI v1.1.0" end
-
-        -- Return the protected proxy
-        return AestheticUIProxy
+    AestheticUIMeta.__index = AestheticUI
+    AestheticUIMeta.__newindex = function(_, k, v)
+        -- Prevent modification of core library functions
+        rawset(AestheticUI, k, v)
     end
+    AestheticUIMeta.__metatable = "The metatable is locked"
+    AestheticUIMeta.__tostring = function() return "AestheticUI v1.1.0" end
 
-    return AestheticUI
+    -- Return the protected proxy
+    return AestheticUIProxy
+end
+
+return AestheticUI
