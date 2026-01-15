@@ -374,15 +374,6 @@ function AestheticUI:Notify(config, _fromQueue)
         end
     end
     
-    -- Accent bar
-    local accentBar = createInstance("Frame", {
-        Size = UDim2.new(0, 3, 1, 0),
-        BackgroundColor3 = accentColor,
-        BorderSizePixel = 0,
-        ZIndex = 6002,
-        Parent = notif
-    })
-    
     -- Close button (click to dismiss)
     local closeBtn = createInstance("TextButton", {
         Size = UDim2.new(0, 20, 0, 20),
@@ -456,7 +447,6 @@ function AestheticUI:Notify(config, _fromQueue)
     registerTheme(function()
         if notif.Parent == nil then return end
         accentColor = getAccent()
-        accentBar.BackgroundColor3 = accentColor
         closeBtn.TextColor3 = Theme.TextSoft
         titleLabel.TextColor3 = Theme.Text
         messageLabel.TextColor3 = Theme.TextSoft
