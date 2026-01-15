@@ -990,6 +990,7 @@ function AestheticUI:CreateTab(window, config)
     createInstance("UIPadding", {
         PaddingTop = UDim.new(0, Spacing.Sm),
         PaddingBottom = UDim.new(0, Spacing.Sm),
+        PaddingLeft = UDim.new(0, Spacing.Lg),
         PaddingRight = UDim.new(0, Spacing.Lg),
         Parent = tabPage
     })
