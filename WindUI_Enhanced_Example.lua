@@ -13,7 +13,7 @@ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/rel
 -- ============================================================
 -- STEP 2: Load Enhanced Wrapper
 -- ============================================================
-local Enhanced = loadstring(readfile("d:/roblox lua deadly 2/WindUI_Enhanced.lua"))()
+local Enhanced = loadstring(game:HttpGet("https://raw.githubusercontent.com/gabuskyun02-lang/deadtest/refs/heads/main/WindUI_Enhanced.lua"))()
 
 -- ============================================================
 -- STEP 3: Initialize Wrapper
