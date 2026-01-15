@@ -340,9 +340,9 @@ function AestheticUI:Notify(config, _fromQueue)
     local accentColor = getAccent()
     
     local notif = createInstance("Frame", {
-        Size = UDim2.new(1, 0, 0, 70),
+        Size = UDim2.new(1, 0, 0, 72),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.08,
+        BackgroundTransparency = 0.06,
         ClipsDescendants = true,
         ZIndex = 6001,
         Parent = NotificationContainer
@@ -376,7 +376,7 @@ function AestheticUI:Notify(config, _fromQueue)
     
     -- Accent bar
     local accentBar = createInstance("Frame", {
-        Size = UDim2.new(0, 4, 1, 0),
+        Size = UDim2.new(0, 3, 1, 0),
         BackgroundColor3 = accentColor,
         BorderSizePixel = 0,
         ZIndex = 6002,
@@ -386,11 +386,11 @@ function AestheticUI:Notify(config, _fromQueue)
     -- Close button (click to dismiss)
     local closeBtn = createInstance("TextButton", {
         Size = UDim2.new(0, 20, 0, 20),
-        Position = UDim2.new(1, -8, 0, 8),
+        Position = UDim2.new(1, -8, 0, 9),
         AnchorPoint = Vector2.new(1, 0),
         BackgroundTransparency = 1,
         Text = "×",
-        TextColor3 = Theme.TextDim,
+        TextColor3 = Theme.TextSoft,
         TextSize = 16,
         Font = Enum.Font.GothamBold,
         ZIndex = 6002,
@@ -410,7 +410,7 @@ function AestheticUI:Notify(config, _fromQueue)
     -- Title
     local titleLabel = createInstance("TextLabel", {
         Size = UDim2.new(1, -40, 0, 22),
-        Position = UDim2.new(0, 14, 0, 8),
+        Position = UDim2.new(0, 14, 0, 10),
         BackgroundTransparency = 1,
         Text = title,
         TextColor3 = Theme.Text,
@@ -423,11 +423,11 @@ function AestheticUI:Notify(config, _fromQueue)
     
     -- Message
     local messageLabel = createInstance("TextLabel", {
-        Size = UDim2.new(1, -20, 0, 30),
-        Position = UDim2.new(0, 14, 0, 28),
+        Size = UDim2.new(1, -20, 0, 32),
+        Position = UDim2.new(0, 14, 0, 32),
         BackgroundTransparency = 1,
         Text = message,
-        TextColor3 = Theme.TextDim,
+        TextColor3 = Theme.TextSoft,
         TextSize = 12,
         Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -457,9 +457,9 @@ function AestheticUI:Notify(config, _fromQueue)
         if notif.Parent == nil then return end
         accentColor = getAccent()
         accentBar.BackgroundColor3 = accentColor
-        closeBtn.TextColor3 = Theme.TextDim
+        closeBtn.TextColor3 = Theme.TextSoft
         titleLabel.TextColor3 = Theme.Text
-        messageLabel.TextColor3 = Theme.TextDim
+        messageLabel.TextColor3 = Theme.TextSoft
         notif.BackgroundColor3 = Theme.SurfaceAlt
         progressBg.BackgroundColor3 = Theme.BorderSoft
         progressFill.BackgroundColor3 = accentColor
