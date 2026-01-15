@@ -482,6 +482,9 @@ local StatsSection = AestheticUI:CreateSection(HomeTab, "📊 Statistics")
 StatusLabel = AestheticUI:CreateLabel(StatsSection, {
     Text = "Status: <font color='#FFD700'>Initializing...</font>"
 })
+StatsLabel = AestheticUI:CreateLabel(StatsSection, {
+    Text = "Items: 0 | IPM: 0.0 | Floor: 0"
+})
 
 AestheticUI:CreateButton(StatsSection, {
     Text = "🚨 PANIC (Emergency Stop)",

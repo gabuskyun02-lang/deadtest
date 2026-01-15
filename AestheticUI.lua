@@ -512,7 +512,7 @@ function AestheticUI:CreateWindow(config)
         Position = UDim2.new(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundColor3 = Theme.Surface,
-        BackgroundTransparency = 0.08,
+        BackgroundTransparency = 0.15,
         Parent = screenGui
     })
     addCorner(mainFrame, Radius.Window)
@@ -525,7 +525,7 @@ function AestheticUI:CreateWindow(config)
     local titleBar = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 40),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.18,
+        BackgroundTransparency = 0.25,
         Parent = mainFrame
     })
     addCorner(titleBar, Radius.Window)
@@ -536,7 +536,7 @@ function AestheticUI:CreateWindow(config)
         Size = UDim2.new(1, 0, 0, 12),
         Position = UDim2.new(0, 0, 1, -12),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.18,
+        BackgroundTransparency = 0.25,
         BorderSizePixel = 0,
         Parent = titleBar
     })
@@ -698,7 +698,7 @@ function AestheticUI:CreateWindow(config)
         Size = UDim2.new(0, 130, 1, -50),
         Position = UDim2.new(0, 5, 0, 45),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.35,
+        BackgroundTransparency = 0.25,
         Parent = mainFrame
     })
     addCorner(tabContainer, Radius.Container)
@@ -1064,7 +1064,7 @@ function AestheticUI:CreateSection(tab, name)
     local section = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 0),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.42,
+        BackgroundTransparency = 0.30,
         AutomaticSize = Enum.AutomaticSize.Y,
         Parent = tab.Page
     })
