@@ -913,6 +913,7 @@ function AestheticUI:CreateWindow(config)
         Position = UDim2.new(0, 8, 0, 45),
         BackgroundColor3 = Theme.SurfaceAlt,
         BackgroundTransparency = 0.78,
+        ClipsDescendants = true,
         Parent = mainFrame
     })
     addCorner(tabContainer, Radius.Container)
