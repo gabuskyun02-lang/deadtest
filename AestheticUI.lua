@@ -1523,11 +1523,12 @@ function AestheticUI:CreateSlider(section, config)
     local bubbleLabel
     if showValueBubble then
         bubble = createInstance("Frame", {
-            Size = UDim2.new(0, 52, 0, 22),
-            Position = UDim2.new((value - min) / (max - min), 0, 0, -6),
+            Size = UDim2.new(0, 40, 0, 20),
+            Position = UDim2.new((value - min) / (max - min), 0, 0, -8),
             AnchorPoint = Vector2.new(0.5, 1),
             BackgroundColor3 = Theme.SurfaceAlt,
-            BackgroundTransparency = 0.1,
+            BackgroundTransparency = 1,
+            Visible = false,
             Parent = sliderBg
         })
         addCorner(bubble, Radius.Subtle)
@@ -1538,12 +1539,10 @@ function AestheticUI:CreateSlider(section, config)
             BackgroundTransparency = 1,
             Text = tostring(value),
             TextColor3 = Theme.Text,
-            TextSize = 11,
+            TextSize = 10,
             Font = Enum.Font.GothamMedium,
             Parent = bubble
         })
-        bubble.BackgroundTransparency = 1
-        bubbleLabel.TextTransparency = 1
     end
 
     local function formatValue(val)
@@ -1589,8 +1588,8 @@ function AestheticUI:CreateSlider(section, config)
             playSound("Click")
             updateSlider(input)
             if bubble then
+                bubble.Visible = true
                 tween(bubble, {BackgroundTransparency = 0.1}, TweenPresets.Quick)
-                tween(bubbleLabel, {TextTransparency = 0}, TweenPresets.Quick)
             end
         end
     end)
@@ -1599,8 +1598,10 @@ function AestheticUI:CreateSlider(section, config)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
             if bubble then
-                tween(bubble, {BackgroundTransparency = 1}, TweenPresets.Quick)
-                tween(bubbleLabel, {TextTransparency = 1}, TweenPresets.Quick)
+                local t = tween(bubble, {BackgroundTransparency = 1}, TweenPresets.Quick)
+                t.Completed:Connect(function()
+                    bubble.Visible = false
+                end)
             end
         end
     end)
@@ -2423,6 +2424,7 @@ function AestheticUI:CreateLabel(section, config)
         Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextWrapped = true,
+        RichText = true,
         AutomaticSize = Enum.AutomaticSize.Y,
         Parent = section.Content
     })
