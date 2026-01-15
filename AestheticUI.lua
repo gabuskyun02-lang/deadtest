@@ -2495,6 +2495,10 @@ end
 
 -- Label
 function AestheticUI:CreateLabel(section, config)
+    -- Backward compatibility: if config is a string, convert to table
+    if type(config) == "string" then
+        config = {Text = config}
+    end
     config = config or {}
     local text = config.Text or "Label"
     
