@@ -197,6 +197,7 @@ function AestheticUI:Notify(config)
         BackgroundColor3 = Theme.BackgroundSecondary,
         BackgroundTransparency = 0.1,
         ClipsDescendants = true,
+        ZIndex = 6001,
         Parent = NotificationContainer
     })
     addCorner(notif, 10)
@@ -216,6 +217,7 @@ function AestheticUI:Notify(config)
         Size = UDim2.new(0, 4, 1, 0),
         BackgroundColor3 = accentColor,
         BorderSizePixel = 0,
+        ZIndex = 6002,
         Parent = notif
     })
     
@@ -229,6 +231,7 @@ function AestheticUI:Notify(config)
         TextColor3 = Theme.TextDim,
         TextSize = 16,
         Font = Enum.Font.GothamBold,
+        ZIndex = 6002,
         Parent = notif
     })
     closeBtn.MouseButton1Click:Connect(dismissNotif)
@@ -249,6 +252,7 @@ function AestheticUI:Notify(config)
         TextSize = 14,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 6002,
         Parent = notif
     })
     
@@ -263,6 +267,7 @@ function AestheticUI:Notify(config)
         Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextWrapped = true,
+        ZIndex = 6002,
         Parent = notif
     })
     
@@ -272,12 +277,14 @@ function AestheticUI:Notify(config)
         Position = UDim2.new(0, 0, 1, -3),
         BackgroundColor3 = Theme.Border,
         BorderSizePixel = 0,
+        ZIndex = 6002,
         Parent = notif
     })
     local progressFill = createInstance("Frame", {
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundColor3 = accentColor,
         BorderSizePixel = 0,
+        ZIndex = 6003,
         Parent = progressBg
     })
     
@@ -416,6 +423,7 @@ function AestheticUI:CreateWindow(config)
     })
     addCorner(minimizeBtn, 6)
     
+    
     minimizeBtn.MouseEnter:Connect(function()
         tween(minimizeBtn, {BackgroundTransparency = 0.3}, TweenPresets.Quick)
     end)
@@ -423,13 +431,6 @@ function AestheticUI:CreateWindow(config)
         tween(minimizeBtn, {BackgroundTransparency = 0.8}, TweenPresets.Quick)
     end)
     
-    local function toggleVisibility()
-        if Window.Toggle then
-            Window:Toggle()
-        end
-    end
-    
-    minimizeBtn.MouseButton1Click:Connect(toggleVisibility)
     
     -- Dragging & Resizing
     local dragging, dragInput, dragStart, startPos
@@ -566,6 +567,13 @@ function AestheticUI:CreateWindow(config)
             end)
         end
     end
+
+    -- Toggle visibility function (defined AFTER Window object is created)
+    local function toggleVisibility()
+        Window:Toggle()
+    end
+
+    minimizeBtn.MouseButton1Click:Connect(toggleVisibility)
     
     -- Set toggle bind
     function Window:SetBind(key)
@@ -605,7 +613,12 @@ function AestheticUI:CreateWindow(config)
         local size = game:GetService("TextService"):GetTextSize(text, 11, Enum.Font.Gotham, Vector2.new(200, 100))
         tooltip.Size = UDim2.new(0, size.X + 10, 0, size.Y + 6)
         tooltip.Visible = true
-        
+
+        if self._tooltipConn then
+            self._tooltipConn:Disconnect()
+            self._tooltipConn = nil
+        end
+
         local conn = RunService.RenderStepped:Connect(function()
             local mousePos = UserInputService:GetMouseLocation()
             tooltip.Position = UDim2.new(0, mousePos.X + 15, 0, mousePos.Y - 5)
@@ -622,6 +635,10 @@ function AestheticUI:CreateWindow(config)
     function Window:Destroy()
         for _, conn in pairs(self._connections) do
             pcall(function() conn:Disconnect() end)
+        end
+        if self._tooltipConn then
+            pcall(function() self._tooltipConn:Disconnect() end)
+            self._tooltipConn = nil
         end
         tween(mainFrame, {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1}, TweenPresets.Quick)
         task.wait(0.2)
@@ -656,19 +673,23 @@ function AestheticUI:CreateWindow(config)
     tween(mainFrame, {Size = size, BackgroundTransparency = 0.05}, TweenPresets.Spring)
     
     -- [ADVANCED ANTI-DETECTION] Window-level Metatable locking
-    local WindowProxy = newproxy(true)
-    local WindowMeta = getmetatable(WindowProxy)
-    
-    WindowMeta.__index = Window
-    WindowMeta.__newindex = function(_, k, v)
-        Window[k] = v
+    if newproxy then
+        local WindowProxy = newproxy(true)
+        local WindowMeta = getmetatable(WindowProxy)
+
+        WindowMeta.__index = Window
+        WindowMeta.__newindex = function(_, k, v)
+            Window[k] = v
+        end
+        WindowMeta.__metatable = "The metatable is locked"
+        WindowMeta.__tostring = function() return "AestheticUI_Window" end
+
+        _G.AestheticUI_Window = Window -- Internal reference
+        return WindowProxy
     end
-    WindowMeta.__metatable = "The metatable is locked"
-    WindowMeta.__tostring = function() return "AestheticUI_Window" end
-    
-    _G.AestheticUI_Window = Window -- Internal reference
-    
-    return WindowProxy
+
+    _G.AestheticUI_Window = Window
+    return Window
 end
 
 -- Create Tab
@@ -872,8 +893,6 @@ function AestheticUI:CreateButton(section, config)
         
         pcall(callback)
     end)
-    
-    local window = section.Frame.Parent.Parent.Parent.Parent:FindFirstChild("_config") and section.Frame.Parent.Parent.Parent.Parent or nil -- Hacky way to find window ref if needed
     
     btn.MouseEnter:Connect(function()
         tween(btn, {BackgroundTransparency = 0.5}, TweenPresets.Quick)
@@ -1270,8 +1289,11 @@ function AestheticUI:CreateDropdown(section, config)
         local search = searchBar.Text:lower()
         for _, child in ipairs(optionsFrame:GetChildren()) do
             if child:IsA("TextButton") then
-                local optText = child:FindFirstChildOfClass("TextLabel").Text:lower()
-                child.Visible = optText:find(search) ~= nil
+                local label = child:FindFirstChildOfClass("TextLabel")
+                if label then
+                    local optText = label.Text:lower()
+                    child.Visible = optText:find(search) ~= nil
+                end
             end
         end
     end)
@@ -1744,21 +1766,6 @@ function AestheticUI:CreateColorPicker(section, config)
         end
     end)
     
-    UserInputService.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            if draggingSV then
-                s = math.clamp((input.Position.X - satValBox.AbsolutePosition.X) / satValBox.AbsoluteSize.X, 0, 1)
-                v = 1 - math.clamp((input.Position.Y - satValBox.AbsolutePosition.Y) / satValBox.AbsoluteSize.Y, 0, 1)
-                satValCursor.Position = UDim2.new(s, 0, 1 - v, 0)
-                updateColor()
-            elseif draggingH then
-                h = math.clamp((input.Position.X - hueSlider.AbsolutePosition.X) / hueSlider.AbsoluteSize.X, 0, 1)
-                hueCursor.Position = UDim2.new(h, 0, 0.5, 0)
-                updateColor()
-            end
-        end
-    end)
-    
     if _G.AestheticUI_Window then
         local conn = UserInputService.InputChanged:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseMovement then
@@ -1809,16 +1816,20 @@ end
 
 -- [ADVANCED ANTI-DETECTION] Metatable Locking
 -- Prevent AC from inspecting the library's internal structure
-local AestheticUIProxy = newproxy(true)
-local AestheticUIMeta = getmetatable(AestheticUIProxy)
+    if newproxy then
+        local AestheticUIProxy = newproxy(true)
+        local AestheticUIMeta = getmetatable(AestheticUIProxy)
 
-AestheticUIMeta.__index = AestheticUI
-AestheticUIMeta.__newindex = function(_, k, v)
-    -- Prevent modification of core library functions
-    rawset(AestheticUI, k, v)
-end
-AestheticUIMeta.__metatable = "The metatable is locked"
-AestheticUIMeta.__tostring = function() return "AestheticUI v1.1.0" end
+        AestheticUIMeta.__index = AestheticUI
+        AestheticUIMeta.__newindex = function(_, k, v)
+            -- Prevent modification of core library functions
+            rawset(AestheticUI, k, v)
+        end
+        AestheticUIMeta.__metatable = "The metatable is locked"
+        AestheticUIMeta.__tostring = function() return "AestheticUI v1.1.0" end
 
--- Return the protected proxy
-return AestheticUIProxy
+        -- Return the protected proxy
+        return AestheticUIProxy
+    end
+
+    return AestheticUI
