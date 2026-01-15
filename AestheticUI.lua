@@ -719,8 +719,8 @@ function AestheticUI:CreateWindow(config)
     
     -- Content container
     local contentContainer = createInstance("Frame", {
-        Size = UDim2.new(1, -150, 1, -55),
-        Position = UDim2.new(0, 145, 0, 48),
+        Size = UDim2.new(1, -155, 1, -55),
+        Position = UDim2.new(0, 150, 0, 48),
         BackgroundTransparency = 1,
         ClipsDescendants = true,
         Parent = mainFrame
