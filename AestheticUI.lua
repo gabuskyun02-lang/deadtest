@@ -88,28 +88,28 @@ end
 
 -- Theme Configuration
 local Theme = {
-    Background = Color3.fromRGB(14, 14, 18),
-    BackgroundSecondary = Color3.fromRGB(18, 18, 24),
-    Surface = Color3.fromRGB(18, 20, 26),
-    SurfaceAlt = Color3.fromRGB(22, 24, 30),
-    Accent = Color3.fromRGB(110, 140, 255),
-    AccentSoft = Color3.fromRGB(90, 115, 200),
-    AccentGlow = Color3.fromRGB(130, 160, 255),
-    Text = Color3.fromRGB(245, 247, 255),
-    TextSoft = Color3.fromRGB(185, 190, 205),
-    TextDim = Color3.fromRGB(125, 130, 145),
+    Background = Color3.fromRGB(10, 12, 18),
+    BackgroundSecondary = Color3.fromRGB(13, 16, 24),
+    Surface = Color3.fromRGB(20, 26, 36),
+    SurfaceAlt = Color3.fromRGB(24, 30, 40),
+    Accent = Color3.fromRGB(110, 145, 255),
+    AccentSoft = Color3.fromRGB(78, 108, 206),
+    AccentGlow = Color3.fromRGB(140, 175, 255),
+    Text = Color3.fromRGB(236, 242, 255),
+    TextSoft = Color3.fromRGB(176, 188, 210),
+    TextDim = Color3.fromRGB(118, 132, 155),
     Success = Color3.fromRGB(90, 200, 140),
-    Warning = Color3.fromRGB(255, 180, 70),
-    Danger = Color3.fromRGB(255, 90, 100),
-    BorderSoft = Color3.fromRGB(40, 42, 50),
-    BorderStrong = Color3.fromRGB(55, 58, 68),
+    Warning = Color3.fromRGB(255, 185, 80),
+    Danger = Color3.fromRGB(255, 95, 110),
+    BorderSoft = Color3.fromRGB(38, 48, 62),
+    BorderStrong = Color3.fromRGB(60, 74, 90),
     -- Card system colors
-    CardBg = Color3.fromRGB(24, 26, 32),
-    CardBorder = Color3.fromRGB(48, 52, 62),
-    CardHeader = Color3.fromRGB(28, 30, 36),
+    CardBg = Color3.fromRGB(22, 28, 38),
+    CardBorder = Color3.fromRGB(58, 70, 86),
+    CardHeader = Color3.fromRGB(28, 34, 46),
     -- Section header color
-    SectionHeader = Color3.fromRGB(140, 145, 165),
-    Glass = 0.88
+    SectionHeader = Color3.fromRGB(120, 135, 155),
+    Glass = 0.92
 }
 
 local Radius = {
@@ -177,15 +177,19 @@ local function addInnerStroke(parent, color, thickness)
 end
 
 local function addGlass(parent)
+    local glass = Theme.Glass or 0.9
+    local top = math.clamp(glass - 0.08, 0, 1)
+    local mid = math.clamp(glass - 0.02, 0, 1)
+    local bottom = math.clamp(glass + 0.04, 0, 1)
     return createInstance("UIGradient", {
         Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 185, 200))
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(190, 198, 210))
         }),
         Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.88),
-            NumberSequenceKeypoint.new(0.5, 0.92),
-            NumberSequenceKeypoint.new(1, 0.95)
+            NumberSequenceKeypoint.new(0, top),
+            NumberSequenceKeypoint.new(0.5, mid),
+            NumberSequenceKeypoint.new(1, bottom)
         }),
         Rotation = 90,
         Parent = parent
@@ -234,6 +238,93 @@ local function addCardShadow(parent)
         Parent = parent
     })
 end
+
+local function addBlurSimulation(parent)
+    -- Glassmorphism blur simulation (Roblox doesn't support backdrop-filter)
+    -- This creates a multi-layer frosted glass effect
+    local glass = Theme.Glass or 0.9
+    local baseTrans = math.clamp(glass + 0.02, 0, 1)
+    local frostZ = math.max((parent.ZIndex or 1) - 1, 0)
+    
+    -- Layer 1: Frosted overlay base
+    local frostBase = createInstance("Frame", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundColor3 = Color3.fromRGB(245, 247, 250),
+        BackgroundTransparency = baseTrans,
+        BorderSizePixel = 0,
+        ZIndex = frostZ,
+        Active = false,
+        Parent = parent
+    })
+    
+    -- Layer 2: Noise texture simulation (creates grain effect)
+    local noiseGradient = createInstance("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+            ColorSequenceKeypoint.new(0.25, Color3.fromRGB(252, 253, 255)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(248, 250, 252)),
+            ColorSequenceKeypoint.new(0.75, Color3.fromRGB(245, 247, 250)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(242, 244, 248))
+        }),
+        Transparency = NumberSequence.new(math.clamp(baseTrans + 0.03, 0, 1)),
+        Rotation = 45,
+        Parent = frostBase
+    })
+    
+    -- Layer 3: Light diffusion (simulates light scatter through glass)
+    local lightDiffusion = createInstance("Frame", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BackgroundTransparency = math.clamp(baseTrans + 0.02, 0, 1),
+        BorderSizePixel = 0,
+        Parent = frostBase
+    })
+    
+    local diffusionGradient = createInstance("UIGradient", {
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, math.clamp(baseTrans + 0.02, 0, 1)),
+            NumberSequenceKeypoint.new(0.5, math.clamp(baseTrans + 0.05, 0, 1)),
+            NumberSequenceKeypoint.new(1, math.clamp(baseTrans + 0.07, 0, 1))
+        }),
+        Rotation = 135,
+        Parent = lightDiffusion
+    })
+    
+    return frostBase
+end
+
+local function addGlassDepth(parent)
+    -- Enhanced depth perception with multiple shadow layers
+    
+    -- Outer glow (light source from top-left)
+    local outerGlow = createInstance("ImageLabel", {
+        Size = UDim2.new(1, 20, 1, 20),
+        Position = UDim2.new(0.5, 0, 0.5, -2),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 1,
+        Image = "rbxassetid://5028857084",
+        ImageColor3 = Color3.fromRGB(255, 255, 255),
+        ImageTransparency = 0.93,
+        ZIndex = (parent.ZIndex or 1) - 2,
+        Parent = parent
+    })
+    
+    -- Inner shadow (depth)
+    local innerShadow = createInstance("ImageLabel", {
+        Size = UDim2.new(1, 6, 1, 6),
+        Position = UDim2.new(0.5, 0, 0.5, 2),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 1,
+        Image = "rbxassetid://5028857084",
+        ImageColor3 = Color3.fromRGB(0, 0, 0),
+        ImageTransparency = 0.90,
+        ZIndex = (parent.ZIndex or 1) - 1,
+        Parent = parent
+    })
+    
+    return {OuterGlow = outerGlow, InnerShadow = innerShadow}
+end
+
 
 local ThemeSubscribers = {}
 local function registerTheme(updateFn)
@@ -520,6 +611,19 @@ function AestheticUI:CreateWindow(config)
     end)
     
     createNotificationContainer(screenGui)
+
+    local blurEnabled = config.BlurEnabled
+    if blurEnabled == nil then
+        blurEnabled = true
+    end
+    local blurSize = tonumber(config.BlurSize) or 12
+    local blurEffect = nil
+    if blurEnabled then
+        blurEffect = Instance.new("BlurEffect")
+        blurEffect.Name = "AestheticUI_Blur"
+        blurEffect.Size = blurSize
+        blurEffect.Parent = game:GetService("Lighting")
+    end
     
     -- Main frame with glassmorphism
     local mainFrame = createInstance("Frame", {
@@ -527,13 +631,14 @@ function AestheticUI:CreateWindow(config)
         Position = UDim2.new(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundColor3 = Theme.Surface,
-        BackgroundTransparency = 0.25,
+        BackgroundTransparency = 0.35,
         Parent = screenGui
     })
     addCorner(mainFrame, Radius.Window)
     local mainStroke = addStroke(mainFrame, Theme.BorderStrong, 1)
     local mainInner = addInnerStroke(mainFrame, Theme.BorderSoft, 1)
     addGlass(mainFrame)
+    addBlurSimulation(mainFrame)
     addGlow(mainFrame)
 
     local miniDock = createInstance("TextButton", {
@@ -541,7 +646,7 @@ function AestheticUI:CreateWindow(config)
         Position = UDim2.new(0, 18, 1, -46),
         AnchorPoint = Vector2.new(0, 1),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.2,
+        BackgroundTransparency = 0.3,
         Text = "",
         Visible = false,
         ZIndex = 6001,
@@ -590,7 +695,7 @@ function AestheticUI:CreateWindow(config)
     local titleBar = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 40),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.35,
+        BackgroundTransparency = 0.5,
         Parent = mainFrame
     })
     addCorner(titleBar, Radius.Window)
@@ -601,7 +706,7 @@ function AestheticUI:CreateWindow(config)
         Size = UDim2.new(1, 0, 0, 12),
         Position = UDim2.new(0, 0, 1, -12),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.35,
+        BackgroundTransparency = 0.5,
         BorderSizePixel = 0,
         Parent = titleBar
     })
@@ -655,6 +760,9 @@ function AestheticUI:CreateWindow(config)
         playSound("Click")
         tween(mainFrame, {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1}, TweenPresets.Quick)
         task.wait(0.2)
+        if blurEffect then
+            pcall(function() blurEffect:Destroy() end)
+        end
         screenGui:Destroy()
     end)
     
@@ -774,12 +882,13 @@ function AestheticUI:CreateWindow(config)
         Size = UDim2.new(0, 130, 1, -50),
         Position = UDim2.new(0, 8, 0, 45),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.35,
+        BackgroundTransparency = 0.5,
         Parent = mainFrame
     })
     addCorner(tabContainer, Radius.Container)
     local tabStroke = addStroke(tabContainer, Theme.BorderSoft, 1)
     addGlass(tabContainer)
+    addBlurSimulation(tabContainer)
     
     local tabList = createInstance("UIListLayout", {
         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -822,6 +931,7 @@ function AestheticUI:CreateWindow(config)
         ContentContainer = contentContainer,
         Tabs = {},
         ActiveTab = nil,
+        BlurEffect = blurEffect,
         _connections = {},
         _config = {},
         _visible = true,
@@ -842,6 +952,9 @@ function AestheticUI:CreateWindow(config)
     -- Visibility management
     function Window:Toggle()
         self._visible = not self._visible
+        if blurEffect then
+            blurEffect.Enabled = self._visible
+        end
         if self._visible then
             miniDock.Visible = false
             mainFrame.Visible = true
@@ -850,7 +963,7 @@ function AestheticUI:CreateWindow(config)
             mainFrame.Size = miniDock.Size
             mainFrame.Position = getDockPos()
             mainFrame.BackgroundTransparency = 1
-            tween(mainFrame, {Size = targetSize, Position = targetPos, BackgroundTransparency = 0.15}, TweenPresets.Spring)
+            tween(mainFrame, {Size = targetSize, Position = targetPos, BackgroundTransparency = 0.35}, TweenPresets.Spring)
         else
             self._lastSize = mainFrame.Size
             self._lastPos = mainFrame.Position
@@ -974,6 +1087,9 @@ function AestheticUI:CreateWindow(config)
         if self._tooltipConn then
             pcall(function() self._tooltipConn:Disconnect() end)
             self._tooltipConn = nil
+        end
+        if blurEffect then
+            pcall(function() blurEffect:Destroy() end)
         end
         tween(mainFrame, {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1}, TweenPresets.Quick)
         task.wait(0.2)
@@ -1771,7 +1887,7 @@ function AestheticUI:CreateCard(section, config)
     local card = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 0),
         BackgroundColor3 = Theme.CardBg,
-        BackgroundTransparency = 0.30,
+        BackgroundTransparency = 0.45,
         AutomaticSize = Enum.AutomaticSize.Y,
         Parent = section.Content
     })
@@ -1779,6 +1895,7 @@ function AestheticUI:CreateCard(section, config)
     local cardStroke = addStroke(card, Theme.CardBorder, 1)
     addInnerStroke(card, Theme.BorderSoft, 1)
     addGlass(card)
+    addBlurSimulation(card)
     addCardShadow(card)
     
     local hasHeader = title ~= "" or description ~= ""
