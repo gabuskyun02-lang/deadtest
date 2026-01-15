@@ -10,6 +10,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local TextService = game:GetService("TextService")
+local SoundService = game:GetService("SoundService")
 
 -- [ADVANCED ANTI-DETECTION] Kernel Integrity & Environment Isolation
 local _IntegrityPass = true
@@ -87,39 +88,45 @@ end
 
 -- Theme Configuration
 local Theme = {
-    Background = Color3.fromRGB(16, 16, 20),
-    BackgroundSecondary = Color3.fromRGB(20, 20, 26),
-    Accent = Color3.fromRGB(122, 72, 220),
-    AccentGlow = Color3.fromRGB(154, 112, 230),
-    Text = Color3.fromRGB(236, 236, 242),
-    TextDim = Color3.fromRGB(140, 145, 160),
+    Background = Color3.fromRGB(14, 14, 18),
+    BackgroundSecondary = Color3.fromRGB(18, 18, 24),
+    Surface = Color3.fromRGB(22, 22, 30),
+    SurfaceAlt = Color3.fromRGB(26, 26, 34),
+    Accent = Color3.fromRGB(120, 76, 230),
+    AccentGlow = Color3.fromRGB(165, 128, 240),
+    AccentSoft = Color3.fromRGB(98, 70, 180),
+    Text = Color3.fromRGB(238, 238, 245),
+    TextDim = Color3.fromRGB(150, 155, 170),
+    TextSoft = Color3.fromRGB(116, 120, 134),
     Success = Color3.fromRGB(36, 190, 96),
     Warning = Color3.fromRGB(230, 190, 80),
     Danger = Color3.fromRGB(220, 90, 90),
-    Border = Color3.fromRGB(38, 38, 46),
+    Border = Color3.fromRGB(40, 40, 52),
+    BorderSoft = Color3.fromRGB(34, 34, 44),
+    BorderStrong = Color3.fromRGB(64, 64, 80),
     Glass = 0.92
 }
 
 local Radius = {
-    Window = 12,
-    Container = 10,
-    Control = 6,
-    Subtle = 4
+    Window = 14,
+    Container = 12,
+    Control = 7,
+    Subtle = 5
 }
 
 local Spacing = {
     Xs = 4,
-    Sm = 6,
-    Md = 8,
-    Lg = 12
+    Sm = 8,
+    Md = 10,
+    Lg = 14
 }
 
 -- Smooth Tween Presets
 local TweenPresets = {
-    Quick = TweenInfo.new(0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-    Smooth = TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-    Spring = TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-    Bounce = TweenInfo.new(0.4, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out)
+    Quick = TweenInfo.new(0.12, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+    Smooth = TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+    Spring = TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+    Bounce = TweenInfo.new(0.36, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out)
 }
 
 -- Utility Functions
@@ -143,7 +150,36 @@ local function addCorner(parent, radius)
 end
 
 local function addStroke(parent, color, thickness)
-    return createInstance("UIStroke", {Color = color or Theme.Border, Thickness = thickness or 1, Parent = parent})
+    return createInstance("UIStroke", {
+        Color = color or Theme.Border,
+        Thickness = thickness or 1,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+        Parent = parent
+    })
+end
+
+local function addInnerStroke(parent, color, thickness)
+    return createInstance("UIStroke", {
+        Color = color or Theme.BorderSoft,
+        Thickness = thickness or 1,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+        Parent = parent
+    })
+end
+
+local function addGlass(parent)
+    return createInstance("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 200, 220))
+        }),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.96),
+            NumberSequenceKeypoint.new(1, 1)
+        }),
+        Rotation = 90,
+        Parent = parent
+    })
 end
 
 local function addGlow(parent)
@@ -161,9 +197,109 @@ local function addGlow(parent)
     return glow
 end
 
+local function addAccentGlow(parent, color)
+    return createInstance("ImageLabel", {
+        Size = UDim2.new(1, 16, 1, 16),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 1,
+        Image = "rbxassetid://5028857084",
+        ImageColor3 = color or Theme.AccentGlow,
+        ImageTransparency = 1,
+        Parent = parent
+    })
+end
+
+local ThemeSubscribers = {}
+local function registerTheme(updateFn)
+    table.insert(ThemeSubscribers, updateFn)
+    pcall(updateFn)
+end
+
+local function applyTheme()
+    for i = #ThemeSubscribers, 1, -1 do
+        local ok = pcall(ThemeSubscribers[i])
+        if not ok then
+            table.remove(ThemeSubscribers, i)
+        end
+    end
+end
+
+local SoundHooks = {}
+local SoundCache = {}
+local ControlRegistry = setmetatable({}, {__mode = "k"})
+local function playSound(kind)
+    local hook = SoundHooks and SoundHooks[kind]
+    if not hook then return end
+    if type(hook) == "function" then
+        pcall(hook, kind)
+        return
+    end
+    local soundId = nil
+    local volume = 0.4
+    local speed = 1
+    if type(hook) == "string" then
+        soundId = hook
+    elseif type(hook) == "table" then
+        soundId = hook.SoundId or hook.Id
+        volume = hook.Volume or volume
+        speed = hook.Speed or speed
+    end
+    if not soundId or soundId == "" then return end
+    local sound = SoundCache[soundId]
+    if not sound then
+        sound = Instance.new("Sound")
+        sound.Name = "AestheticUI_Sound"
+        sound.SoundId = soundId
+        sound.Volume = volume
+        sound.PlaybackSpeed = speed
+        sound.Parent = SoundService
+        SoundCache[soundId] = sound
+    else
+        sound.Volume = volume
+        sound.PlaybackSpeed = speed
+    end
+    sound:Play()
+end
+
+function AestheticUI:SetSoundHooks(hooks)
+    SoundHooks = hooks or {}
+end
+
+function AestheticUI:SetTheme(theme)
+    theme = theme or {}
+    for k, v in pairs(theme) do
+        if Theme[k] ~= nil then
+            Theme[k] = v
+        end
+    end
+    applyTheme()
+end
+
+function AestheticUI:GetTheme()
+    return Theme
+end
+
+function AestheticUI:SetControlDisabled(control, disabled)
+    if type(control) == "table" and control.SetDisabled then
+        control:SetDisabled(disabled)
+        return
+    end
+    local handler = ControlRegistry[control]
+    if handler then
+        handler(disabled)
+    end
+end
+
 -- Notification System
 local NotificationContainer
 local Notifications = {}
+local NotificationQueue = {}
+local NotificationLimit = 4
+
+function AestheticUI:SetNotificationLimit(limit)
+    NotificationLimit = math.max(1, tonumber(limit) or 1)
+end
 
 local function createNotificationContainer(parent)
     NotificationContainer = createInstance("Frame", {
@@ -181,43 +317,65 @@ local function createNotificationContainer(parent)
     })
 end
 
-function AestheticUI:Notify(config)
+function AestheticUI:Notify(config, _fromQueue)
     config = config or {}
+    if not _fromQueue and #Notifications >= NotificationLimit then
+        table.insert(NotificationQueue, config)
+        return nil
+    end
     local title = config.Title or "Notification"
     local message = config.Message or ""
     local duration = config.Duration or 4
     local notifType = config.Type or "Info"
     
-    local colors = {
-        Success = Theme.Success,
-        Warning = Theme.Warning,
-        Error = Theme.Danger,
-        Info = Theme.Accent
-    }
-    local accentColor = colors[notifType] or Theme.Accent
+    local function getAccent()
+        local colors = {
+            Success = Theme.Success,
+            Warning = Theme.Warning,
+            Error = Theme.Danger,
+            Info = Theme.Accent
+        }
+        return colors[notifType] or Theme.Accent
+    end
+    local accentColor = getAccent()
     
     local notif = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 70),
-        BackgroundColor3 = Theme.BackgroundSecondary,
-        BackgroundTransparency = 0.1,
+        BackgroundColor3 = Theme.SurfaceAlt,
+        BackgroundTransparency = 0.08,
         ClipsDescendants = true,
         ZIndex = 6001,
         Parent = NotificationContainer
     })
     addCorner(notif, Radius.Container)
-    addStroke(notif, accentColor, 1)
+    addStroke(notif, Theme.BorderStrong, 1)
+    addInnerStroke(notif, accentColor, 1)
+    addGlass(notif)
     
     local dismissed = false
+    table.insert(Notifications, notif)
     local function dismissNotif()
         if dismissed then return end
         dismissed = true
         tween(notif, {Size = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1}, TweenPresets.Quick)
         task.wait(0.2)
         pcall(function() notif:Destroy() end)
+        for i, item in ipairs(Notifications) do
+            if item == notif then
+                table.remove(Notifications, i)
+                break
+            end
+        end
+        if #NotificationQueue > 0 then
+            local nextConfig = table.remove(NotificationQueue, 1)
+            task.defer(function()
+                AestheticUI:Notify(nextConfig, true)
+            end)
+        end
     end
     
     -- Accent bar
-    createInstance("Frame", {
+    local accentBar = createInstance("Frame", {
         Size = UDim2.new(0, 4, 1, 0),
         BackgroundColor3 = accentColor,
         BorderSizePixel = 0,
@@ -238,7 +396,10 @@ function AestheticUI:Notify(config)
         ZIndex = 6002,
         Parent = notif
     })
-    closeBtn.MouseButton1Click:Connect(dismissNotif)
+    closeBtn.MouseButton1Click:Connect(function()
+        playSound("Click")
+        dismissNotif()
+    end)
     closeBtn.MouseEnter:Connect(function()
         tween(closeBtn, {TextColor3 = Theme.Text}, TweenPresets.Quick)
     end)
@@ -247,7 +408,7 @@ function AestheticUI:Notify(config)
     end)
     
     -- Title
-    createInstance("TextLabel", {
+    local titleLabel = createInstance("TextLabel", {
         Size = UDim2.new(1, -40, 0, 22),
         Position = UDim2.new(0, 14, 0, 8),
         BackgroundTransparency = 1,
@@ -261,7 +422,7 @@ function AestheticUI:Notify(config)
     })
     
     -- Message
-    createInstance("TextLabel", {
+    local messageLabel = createInstance("TextLabel", {
         Size = UDim2.new(1, -20, 0, 30),
         Position = UDim2.new(0, 14, 0, 28),
         BackgroundTransparency = 1,
@@ -279,7 +440,7 @@ function AestheticUI:Notify(config)
     local progressBg = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 3),
         Position = UDim2.new(0, 0, 1, -3),
-        BackgroundColor3 = Theme.Border,
+        BackgroundColor3 = Theme.BorderSoft,
         BorderSizePixel = 0,
         ZIndex = 6002,
         Parent = notif
@@ -291,6 +452,18 @@ function AestheticUI:Notify(config)
         ZIndex = 6003,
         Parent = progressBg
     })
+
+    registerTheme(function()
+        if notif.Parent == nil then return end
+        accentColor = getAccent()
+        accentBar.BackgroundColor3 = accentColor
+        closeBtn.TextColor3 = Theme.TextDim
+        titleLabel.TextColor3 = Theme.Text
+        messageLabel.TextColor3 = Theme.TextDim
+        notif.BackgroundColor3 = Theme.SurfaceAlt
+        progressBg.BackgroundColor3 = Theme.BorderSoft
+        progressFill.BackgroundColor3 = accentColor
+    end)
     
     -- Animate in
     notif.Size = UDim2.new(1, 0, 0, 0)
@@ -338,29 +511,32 @@ function AestheticUI:CreateWindow(config)
         Size = size,
         Position = UDim2.new(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundColor3 = Theme.Background,
-        BackgroundTransparency = 0.05,
+        BackgroundColor3 = Theme.Surface,
+        BackgroundTransparency = 0.08,
         Parent = screenGui
     })
     addCorner(mainFrame, Radius.Window)
-    addStroke(mainFrame, Theme.Border, 1)
+    local mainStroke = addStroke(mainFrame, Theme.BorderStrong, 1)
+    local mainInner = addInnerStroke(mainFrame, Theme.BorderSoft, 1)
+    addGlass(mainFrame)
     addGlow(mainFrame)
     
     -- Title bar
     local titleBar = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 40),
-        BackgroundColor3 = Theme.BackgroundSecondary,
-        BackgroundTransparency = 0.3,
+        BackgroundColor3 = Theme.SurfaceAlt,
+        BackgroundTransparency = 0.18,
         Parent = mainFrame
     })
     addCorner(titleBar, Radius.Window)
+    addGlass(titleBar)
     
     -- Fix bottom corners of title
-    createInstance("Frame", {
+    local titleFill = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 12),
         Position = UDim2.new(0, 0, 1, -12),
-        BackgroundColor3 = Theme.BackgroundSecondary,
-        BackgroundTransparency = 0.3,
+        BackgroundColor3 = Theme.SurfaceAlt,
+        BackgroundTransparency = 0.18,
         BorderSizePixel = 0,
         Parent = titleBar
     })
@@ -392,7 +568,7 @@ function AestheticUI:CreateWindow(config)
         Position = UDim2.new(1, -35, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
         BackgroundColor3 = Theme.Danger,
-        BackgroundTransparency = 0.8,
+        BackgroundTransparency = 0.82,
         Text = "×",
         TextColor3 = Theme.Text,
         TextSize = 20,
@@ -408,6 +584,7 @@ function AestheticUI:CreateWindow(config)
         tween(closeBtn, {BackgroundTransparency = 0.8}, TweenPresets.Quick)
     end)
     closeBtn.MouseButton1Click:Connect(function()
+        playSound("Click")
         tween(mainFrame, {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1}, TweenPresets.Quick)
         task.wait(0.2)
         screenGui:Destroy()
@@ -418,7 +595,7 @@ function AestheticUI:CreateWindow(config)
         Position = UDim2.new(1, -70, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
         BackgroundColor3 = Theme.Warning,
-        BackgroundTransparency = 0.8,
+        BackgroundTransparency = 0.82,
         Text = "−",
         TextColor3 = Theme.Text,
         TextSize = 20,
@@ -462,6 +639,19 @@ function AestheticUI:CreateWindow(config)
         ZIndex = 51,
         Parent = resizeHandle
     })
+
+    registerTheme(function()
+        if titleBar.Parent == nil then return end
+        closeBtn.BackgroundColor3 = Theme.Danger
+        closeBtn.TextColor3 = Theme.Text
+        minimizeBtn.BackgroundColor3 = Theme.Warning
+        minimizeBtn.TextColor3 = Theme.Text
+        resizeIcon.TextColor3 = Theme.Accent
+        titleGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme.AccentGlow),
+            ColorSequenceKeypoint.new(1, Theme.Text)
+        })
+    end)
 
     titleBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -507,11 +697,13 @@ function AestheticUI:CreateWindow(config)
     local tabContainer = createInstance("Frame", {
         Size = UDim2.new(0, 130, 1, -50),
         Position = UDim2.new(0, 5, 0, 45),
-        BackgroundColor3 = Theme.BackgroundSecondary,
-        BackgroundTransparency = 0.5,
+        BackgroundColor3 = Theme.SurfaceAlt,
+        BackgroundTransparency = 0.35,
         Parent = mainFrame
     })
     addCorner(tabContainer, Radius.Container)
+    local tabStroke = addStroke(tabContainer, Theme.BorderSoft, 1)
+    addGlass(tabContainer)
     
     local tabList = createInstance("UIListLayout", {
         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -533,6 +725,18 @@ function AestheticUI:CreateWindow(config)
         ClipsDescendants = true,
         Parent = mainFrame
     })
+
+    registerTheme(function()
+        if mainFrame.Parent == nil then return end
+        mainFrame.BackgroundColor3 = Theme.Surface
+        mainStroke.Color = Theme.BorderStrong
+        mainInner.Color = Theme.BorderSoft
+        titleBar.BackgroundColor3 = Theme.SurfaceAlt
+        titleFill.BackgroundColor3 = Theme.SurfaceAlt
+        titleLabel.TextColor3 = Theme.Text
+        tabContainer.BackgroundColor3 = Theme.SurfaceAlt
+        tabStroke.Color = Theme.BorderSoft
+    end)
     
     -- Window object
     local Window = {
@@ -545,7 +749,10 @@ function AestheticUI:CreateWindow(config)
         _connections = {},
         _config = {},
         _visible = true,
-        _bind = nil
+        _bind = nil,
+        _defaults = {},
+        _toggleGroups = {},
+        _keybinds = {}
     }
     
     _G.AestheticUI_Window = Window -- Global reference for components
@@ -562,7 +769,7 @@ function AestheticUI:CreateWindow(config)
         if self._visible then
             mainFrame.Visible = true
             local targetSize = self._lastSize or size
-            tween(mainFrame, {Size = targetSize, BackgroundTransparency = 0.05}, TweenPresets.Spring)
+            tween(mainFrame, {Size = targetSize, BackgroundTransparency = 0.08}, TweenPresets.Spring)
         else
             self._lastSize = mainFrame.Size -- Store current size before hiding
             local t = tween(mainFrame, {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1}, TweenPresets.Quick)
@@ -577,7 +784,10 @@ function AestheticUI:CreateWindow(config)
         Window:Toggle()
     end
 
-    minimizeBtn.MouseButton1Click:Connect(toggleVisibility)
+    minimizeBtn.MouseButton1Click:Connect(function()
+        playSound("Click")
+        toggleVisibility()
+    end)
     
     -- Set toggle bind
     function Window:SetBind(key)
@@ -593,13 +803,14 @@ function AestheticUI:CreateWindow(config)
     -- Tooltip System
     local tooltip = createInstance("Frame", {
         Size = UDim2.new(0, 0, 0, 20),
-        BackgroundColor3 = Theme.BackgroundSecondary,
+        BackgroundColor3 = Theme.SurfaceAlt,
         Visible = false,
         ZIndex = 5000,
         Parent = screenGui
     })
     addCorner(tooltip, Radius.Subtle)
-    addStroke(tooltip, Theme.Accent, 1)
+    local tooltipStroke = addStroke(tooltip, Theme.Accent, 1)
+    addGlass(tooltip)
     
     local tooltipLabel = createInstance("TextLabel", {
         Size = UDim2.new(1, 0, 1, 0),
@@ -612,27 +823,51 @@ function AestheticUI:CreateWindow(config)
         Parent = tooltip
     })
     
+    Window._tooltipDelay = config.TooltipDelay or 0.25
+    Window._tooltipSmoothing = config.TooltipSmoothing or 18
+
+    registerTheme(function()
+        if tooltip.Parent == nil then return end
+        tooltip.BackgroundColor3 = Theme.SurfaceAlt
+        tooltipStroke.Color = Theme.AccentGlow
+        tooltipLabel.TextColor3 = Theme.Text
+    end)
+
     function Window:ShowTooltip(text)
         tooltipLabel.Text = text
         local size = game:GetService("TextService"):GetTextSize(text, 11, Enum.Font.Gotham, Vector2.new(200, 100))
         tooltip.Size = UDim2.new(0, size.X + 10, 0, size.Y + 6)
-        tooltip.Visible = true
+        self._tooltipToken = (self._tooltipToken or 0) + 1
+        local token = self._tooltipToken
 
         if self._tooltipConn then
             self._tooltipConn:Disconnect()
             self._tooltipConn = nil
         end
 
-        local conn = RunService.RenderStepped:Connect(function()
-            local mousePos = UserInputService:GetMouseLocation()
-            tooltip.Position = UDim2.new(0, mousePos.X + 15, 0, mousePos.Y - 5)
+        task.delay(self._tooltipDelay, function()
+            if self._tooltipToken ~= token then return end
+            tooltip.Visible = true
+            local conn = RunService.RenderStepped:Connect(function(dt)
+                local mousePos = UserInputService:GetMouseLocation()
+                local target = UDim2.new(0, mousePos.X + 15, 0, mousePos.Y - 5)
+                local alpha = 1 - math.exp(-dt * (self._tooltipSmoothing or 18))
+                tooltip.Position = tooltip.Position:Lerp(target, alpha)
+            end)
+            self._tooltipConn = conn
         end)
-        self._tooltipConn = conn
     end
     
     function Window:HideTooltip()
+        self._tooltipToken = (self._tooltipToken or 0) + 1
         tooltip.Visible = false
         if self._tooltipConn then self._tooltipConn:Disconnect() end
+    end
+
+    function Window:ResetDefaults()
+        for _, resetFn in ipairs(self._defaults) do
+            pcall(resetFn)
+        end
     end
     
     -- Destroy method for cleanup
@@ -674,7 +909,7 @@ function AestheticUI:CreateWindow(config)
     -- Animate window in
     mainFrame.Size = UDim2.new(0, 0, 0, 0)
     mainFrame.BackgroundTransparency = 1
-    tween(mainFrame, {Size = size, BackgroundTransparency = 0.05}, TweenPresets.Spring)
+    tween(mainFrame, {Size = size, BackgroundTransparency = 0.08}, TweenPresets.Spring)
     
     -- [ADVANCED ANTI-DETECTION] Window-level Metatable locking
     if newproxy then
@@ -704,7 +939,7 @@ function AestheticUI:CreateTab(window, config)
     
     local tabBtn = createInstance("TextButton", {
         Size = UDim2.new(1, 0, 0, 35),
-        BackgroundColor3 = Theme.Accent,
+        BackgroundColor3 = Theme.SurfaceAlt,
         BackgroundTransparency = 1,
         Text = "",
         Parent = window.TabContainer
@@ -716,15 +951,16 @@ function AestheticUI:CreateTab(window, config)
         Position = UDim2.new(0, icon ~= "" and 30 or 10, 0, 0),
         BackgroundTransparency = 1,
         Text = name,
-        TextColor3 = Theme.TextDim,
+        TextColor3 = Theme.TextSoft,
         TextSize = 13,
         Font = Enum.Font.GothamMedium,
         TextXAlignment = Enum.TextXAlignment.Left,
         Parent = tabBtn
     })
     
+    local tabIcon = nil
     if icon ~= "" then
-        createInstance("ImageLabel", {
+        tabIcon = createInstance("ImageLabel", {
             Size = UDim2.new(0, 18, 0, 18),
             Position = UDim2.new(0, 8, 0.5, 0),
             AnchorPoint = Vector2.new(0, 0.5),
@@ -766,7 +1002,7 @@ function AestheticUI:CreateTab(window, config)
     
     tabBtn.MouseEnter:Connect(function()
         if window.ActiveTab ~= Tab then
-            tween(tabBtn, {BackgroundTransparency = 0.85}, TweenPresets.Quick)
+            tween(tabBtn, {BackgroundTransparency = 0.82}, TweenPresets.Quick)
             tween(tabLabel, {TextColor3 = Theme.Text}, TweenPresets.Quick)
         end
     end)
@@ -774,7 +1010,7 @@ function AestheticUI:CreateTab(window, config)
     tabBtn.MouseLeave:Connect(function()
         if window.ActiveTab ~= Tab then
             tween(tabBtn, {BackgroundTransparency = 1}, TweenPresets.Quick)
-            tween(tabLabel, {TextColor3 = Theme.TextDim}, TweenPresets.Quick)
+            tween(tabLabel, {TextColor3 = Theme.TextSoft}, TweenPresets.Quick)
         end
     end)
     
@@ -784,16 +1020,28 @@ function AestheticUI:CreateTab(window, config)
             tween(window.ActiveTab.Button, {BackgroundTransparency = 1}, TweenPresets.Quick)
             local oldLabel = window.ActiveTab.Button:FindFirstChildOfClass("TextLabel")
             if oldLabel then
-                tween(oldLabel, {TextColor3 = Theme.TextDim}, TweenPresets.Quick)
+                tween(oldLabel, {TextColor3 = Theme.TextSoft}, TweenPresets.Quick)
             end
         end
         window.ActiveTab = Tab
         tabPage.Visible = true
-        tween(tabBtn, {BackgroundTransparency = 0.7}, TweenPresets.Smooth)
+        tween(tabBtn, {BackgroundTransparency = 0.68}, TweenPresets.Smooth)
         tween(tabLabel, {TextColor3 = Theme.AccentGlow}, TweenPresets.Quick)
     end
     
-    tabBtn.MouseButton1Click:Connect(selectTab)
+    tabBtn.MouseButton1Click:Connect(function()
+        playSound("Click")
+        selectTab()
+    end)
+
+    registerTheme(function()
+        if tabBtn.Parent == nil then return end
+        tabLabel.TextColor3 = window.ActiveTab == Tab and Theme.AccentGlow or Theme.TextSoft
+        if tabIcon then
+            tabIcon.ImageColor3 = window.ActiveTab == Tab and Theme.AccentGlow or Theme.TextDim
+        end
+        tabPage.ScrollBarImageColor3 = Theme.Accent
+    end)
     
     -- Auto-select first tab
     if #window.Tabs == 0 then
@@ -806,26 +1054,55 @@ end
 
 -- Section
 function AestheticUI:CreateSection(tab, name)
+    local sectionName = name
+    local sectionConfig = {}
+    if typeof(name) == "table" then
+        sectionConfig = name
+        sectionName = sectionConfig.Name or "Section"
+    end
+
     local section = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 0),
-        BackgroundColor3 = Theme.BackgroundSecondary,
-        BackgroundTransparency = 0.6,
+        BackgroundColor3 = Theme.SurfaceAlt,
+        BackgroundTransparency = 0.42,
         AutomaticSize = Enum.AutomaticSize.Y,
         Parent = tab.Page
     })
     addCorner(section, Radius.Container)
-    addStroke(section, Theme.Border, 1)
-    
-    local sectionLabel = createInstance("TextLabel", {
-        Size = UDim2.new(1, -16, 0, 25),
+    addStroke(section, Theme.BorderSoft, 1)
+    addGlass(section)
+
+    local header = createInstance("Frame", {
+        Size = UDim2.new(1, -16, 0, 26),
         Position = UDim2.new(0, 8, 0, 0),
         BackgroundTransparency = 1,
-        Text = name or "Section",
+        Parent = section
+    })
+
+    local sectionLabel = createInstance("TextLabel", {
+        Size = UDim2.new(1, -110, 1, 0),
+        BackgroundTransparency = 1,
+        Text = sectionName or "Section",
         TextColor3 = Theme.AccentGlow,
         TextSize = 12,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = section
+        Parent = header
+    })
+
+    local actionContainer = createInstance("Frame", {
+        Size = UDim2.new(0, 100, 1, 0),
+        AnchorPoint = Vector2.new(1, 0),
+        Position = UDim2.new(1, 0, 0, 0),
+        BackgroundTransparency = 1,
+        Parent = header
+    })
+    createInstance("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        HorizontalAlignment = Enum.HorizontalAlignment.Right,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, Spacing.Xs),
+        Parent = actionContainer
     })
     
     local contentFrame = createInstance("Frame", {
@@ -846,7 +1123,60 @@ function AestheticUI:CreateSection(tab, name)
         Parent = contentFrame
     })
     
-    return {Frame = section, Content = contentFrame}
+    registerTheme(function()
+        if section.Parent == nil then return end
+        section.BackgroundColor3 = Theme.SurfaceAlt
+        sectionLabel.TextColor3 = Theme.AccentGlow
+    end)
+
+    local function addHeaderAction(text, callback)
+        local actionBtn = createInstance("TextButton", {
+            Size = UDim2.new(0, 60, 0, 20),
+            BackgroundColor3 = Theme.Surface,
+            BackgroundTransparency = 0.2,
+            Text = "",
+            Parent = actionContainer
+        })
+        addCorner(actionBtn, Radius.Subtle)
+        local actionStroke = addStroke(actionBtn, Theme.BorderSoft, 1)
+        addGlass(actionBtn)
+        local actionLabel = createInstance("TextLabel", {
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Text = text,
+            TextColor3 = Theme.TextSoft,
+            TextSize = 11,
+            Font = Enum.Font.GothamMedium,
+            Parent = actionBtn
+        })
+        actionBtn.MouseEnter:Connect(function()
+            tween(actionBtn, {BackgroundTransparency = 0.05}, TweenPresets.Quick)
+            tween(actionStroke, {Color = Theme.BorderStrong}, TweenPresets.Quick)
+        end)
+        actionBtn.MouseLeave:Connect(function()
+            tween(actionBtn, {BackgroundTransparency = 0.2}, TweenPresets.Quick)
+            tween(actionStroke, {Color = Theme.BorderSoft}, TweenPresets.Quick)
+        end)
+        actionBtn.MouseButton1Click:Connect(function()
+            playSound("Click")
+            pcall(callback)
+        end)
+        registerTheme(function()
+            if actionBtn.Parent == nil then return end
+            actionBtn.BackgroundColor3 = Theme.Surface
+            actionStroke.Color = Theme.BorderSoft
+            actionLabel.TextColor3 = Theme.TextSoft
+        end)
+        return actionBtn
+    end
+
+    if sectionConfig.Actions then
+        for _, action in ipairs(sectionConfig.Actions) do
+            addHeaderAction(action.Text or "Action", action.Callback)
+        end
+    end
+
+    return {Frame = section, Content = contentFrame, AddHeaderAction = addHeaderAction}
 end
 
 -- Button
@@ -855,15 +1185,18 @@ function AestheticUI:CreateButton(section, config)
     local text = config.Text or "Button"
     local tooltip = config.Tooltip or ""
     local callback = config.Callback or function() end
+    local disabled = config.Disabled or false
     
     local btn = createInstance("TextButton", {
         Size = UDim2.new(1, 0, 0, 32),
-        BackgroundColor3 = Theme.Accent,
-        BackgroundTransparency = 0.7,
+        BackgroundColor3 = Theme.AccentSoft,
+        BackgroundTransparency = 0.6,
         Text = "",
         Parent = section.Content
     })
     addCorner(btn, Radius.Control)
+    local btnStroke = addStroke(btn, Theme.BorderSoft, 1)
+    addGlass(btn)
     
     local btnLabel = createInstance("TextLabel", {
         Size = UDim2.new(1, 0, 1, 0),
@@ -875,24 +1208,54 @@ function AestheticUI:CreateButton(section, config)
         Parent = btn
     })
     
+    local function setDisabled(state)
+        disabled = state and true or false
+        btn.AutoButtonColor = not disabled
+        btn.BackgroundTransparency = disabled and 0.8 or 0.6
+        btnLabel.TextColor3 = disabled and Theme.TextSoft or Theme.Text
+        btnStroke.Color = disabled and Theme.BorderSoft or Theme.BorderSoft
+    end
+    ControlRegistry[btn] = setDisabled
+    setDisabled(disabled)
+
+    registerTheme(function()
+        if btn.Parent == nil then return end
+        btn.BackgroundColor3 = Theme.AccentSoft
+        btnLabel.TextColor3 = disabled and Theme.TextSoft or Theme.Text
+        btnStroke.Color = Theme.BorderSoft
+    end)
+
     -- Subtle press feedback
     btn.MouseButton1Click:Connect(function()
-        tween(btn, {BackgroundTransparency = 0.5}, TweenPresets.Quick)
+        if disabled then return end
+        playSound("Click")
+        tween(btn, {BackgroundTransparency = 0.35}, TweenPresets.Quick)
         task.delay(0.12, function()
-            tween(btn, {BackgroundTransparency = 0.7}, TweenPresets.Quick)
+            tween(btn, {BackgroundTransparency = 0.6}, TweenPresets.Quick)
         end)
         
         pcall(callback)
     end)
     
     btn.MouseEnter:Connect(function()
-        tween(btn, {BackgroundTransparency = 0.5}, TweenPresets.Quick)
+        if disabled then return end
+        playSound("Hover")
+        tween(btn, {BackgroundTransparency = 0.45}, TweenPresets.Quick)
+        tween(btnStroke, {Color = Theme.AccentGlow}, TweenPresets.Quick)
         if tooltip ~= "" and _G.AestheticUI_Window then _G.AestheticUI_Window:ShowTooltip(tooltip) end
     end)
     btn.MouseLeave:Connect(function()
-        tween(btn, {BackgroundTransparency = 0.7}, TweenPresets.Quick)
+        if disabled then return end
+        tween(btn, {BackgroundTransparency = 0.6}, TweenPresets.Quick)
+        tween(btnStroke, {Color = Theme.BorderSoft}, TweenPresets.Quick)
         if tooltip ~= "" and _G.AestheticUI_Window then _G.AestheticUI_Window:HideTooltip() end
     end)
+
+    if _G.AestheticUI_Window then
+        table.insert(_G.AestheticUI_Window._defaults, function()
+            setDisabled(config.Disabled or false)
+        end)
+    end
     
     return btn
 end
@@ -904,6 +1267,13 @@ function AestheticUI:CreateToggle(section, config)
     local default = config.Default or false
     local tooltip = config.Tooltip or ""
     local callback = config.Callback or function() end
+    local disabled = config.Disabled or false
+    local groupId = config.Group
+    local allowOff = config.AllowOff
+    if allowOff == nil then
+        allowOff = groupId == nil
+    end
+    local window = _G.AestheticUI_Window
     
     local toggled = default
     local bind = nil
@@ -929,10 +1299,13 @@ function AestheticUI:CreateToggle(section, config)
         Size = UDim2.new(0, 42, 0, 22),
         Position = UDim2.new(1, 0, 0.5, 0),
         AnchorPoint = Vector2.new(1, 0.5),
-        BackgroundColor3 = toggled and Theme.Accent or Theme.Border,
+        BackgroundColor3 = toggled and Theme.Accent or Theme.BorderSoft,
         Parent = container
     })
     addCorner(toggleBg, 11)
+    local toggleStroke = addStroke(toggleBg, Theme.BorderSoft, 1)
+    local toggleGlow = addAccentGlow(toggleBg, Theme.AccentGlow)
+    toggleGlow.ImageTransparency = toggled and 0.86 or 1
     
     local toggleKnob = createInstance("Frame", {
         Size = UDim2.new(0, 16, 0, 16),
@@ -943,14 +1316,37 @@ function AestheticUI:CreateToggle(section, config)
     })
     addCorner(toggleKnob, 8)
     
-    local function updateToggle()
-        toggled = not toggled
-        tween(toggleBg, {BackgroundColor3 = toggled and Theme.Accent or Theme.Border}, TweenPresets.Smooth)
+    local function applyState(value, silent)
+        toggled = value
+        tween(toggleBg, {BackgroundColor3 = toggled and Theme.Accent or Theme.BorderSoft}, TweenPresets.Smooth)
+        tween(toggleStroke, {Color = toggled and Theme.AccentGlow or Theme.BorderSoft}, TweenPresets.Quick)
+        tween(toggleGlow, {ImageTransparency = toggled and 0.86 or 1}, TweenPresets.Quick)
         tween(toggleKnob, {
             Position = toggled and UDim2.new(1, -3, 0.5, 0) or UDim2.new(0, 3, 0.5, 0),
             AnchorPoint = Vector2.new(toggled and 1 or 0, 0.5)
         }, TweenPresets.Spring)
-        pcall(callback, toggled)
+        if window then window._config[text] = toggled end
+        if not silent then pcall(callback, toggled) end
+    end
+
+    local toggleApi
+    local function setToggle(value, silent, fromGroup)
+        if disabled then return end
+        if groupId and allowOff == false and toggled and not value then return end
+        if value == toggled then return end
+        applyState(value, silent)
+        if value and groupId and window and not fromGroup then
+            local group = window._toggleGroups[groupId] or {}
+            for _, item in ipairs(group) do
+                if item ~= toggleApi then
+                    item.Set(item, false, true, true)
+                end
+            end
+        end
+    end
+
+    local function updateToggle()
+        setToggle(not toggled)
     end
     
     local toggleBtn = createInstance("TextButton", {
@@ -960,10 +1356,15 @@ function AestheticUI:CreateToggle(section, config)
         Parent = container
     })
     
-    toggleBtn.MouseButton1Click:Connect(updateToggle)
+    toggleBtn.MouseButton1Click:Connect(function()
+        if disabled then return end
+        playSound("Toggle")
+        updateToggle()
+    end)
     
     -- Right click keybind functionality
     toggleBtn.MouseButton2Click:Connect(function()
+        if disabled then return end
         label.Text = "[Press Key]"
         local conn
         conn = UserInputService.InputBegan:Connect(function(input)
@@ -975,28 +1376,63 @@ function AestheticUI:CreateToggle(section, config)
         end)
     end)
     
-    if _G.AestheticUI_Window then
+    if window then
         local bindConn = UserInputService.InputBegan:Connect(function(input, processed)
             if not processed and bind and input.KeyCode == bind then
                 updateToggle()
             end
         end)
-        _G.AestheticUI_Window:TrackConnection(bindConn)
+        window:TrackConnection(bindConn)
+    end
+    if window then
+        window._config[text] = toggled
     end
     
     container.MouseEnter:Connect(function()
+        if disabled then return end
+        playSound("Hover")
         if tooltip ~= "" and _G.AestheticUI_Window then _G.AestheticUI_Window:ShowTooltip(tooltip) end
     end)
     container.MouseLeave:Connect(function()
+        if disabled then return end
         if tooltip ~= "" and _G.AestheticUI_Window then _G.AestheticUI_Window:HideTooltip() end
     end)
     
-    return {
-        Set = function(_, value)
-            if value ~= toggled then updateToggle() end
+    local function setDisabled(state)
+        disabled = state and true or false
+        label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
+        toggleBg.BackgroundTransparency = disabled and 0.4 or 0
+    end
+
+    registerTheme(function()
+        if container.Parent == nil then return end
+        label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
+        toggleBg.BackgroundColor3 = toggled and Theme.Accent or Theme.BorderSoft
+        toggleStroke.Color = toggled and Theme.AccentGlow or Theme.BorderSoft
+        toggleGlow.ImageColor3 = Theme.AccentGlow
+    end)
+
+    toggleApi = {
+        Set = function(_, value, silent, fromGroup)
+            setToggle(value, silent, fromGroup)
         end,
-        Get = function() return toggled end
+        Get = function() return toggled end,
+        SetDisabled = function(_, value) setDisabled(value) end
     }
+
+    if window and groupId then
+        window._toggleGroups[groupId] = window._toggleGroups[groupId] or {}
+        table.insert(window._toggleGroups[groupId], toggleApi)
+    end
+
+    if window then
+        table.insert(window._defaults, function()
+            applyState(default, true)
+            setDisabled(config.Disabled or false)
+        end)
+    end
+
+    return toggleApi
 end
 
 -- Slider
@@ -1008,8 +1444,13 @@ function AestheticUI:CreateSlider(section, config)
     local default = config.Default or min
     local tooltip = config.Tooltip or ""
     local callback = config.Callback or function() end
+    local step = config.Step or 1
+    local showValueBubble = config.ShowValueTooltip ~= false
+    local valueFormat = config.ValueFormat
+    local disabled = config.Disabled or false
     
     local value = default
+    if _G.AestheticUI_Window then _G.AestheticUI_Window._config[text] = value end
     
     local container = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 45),
@@ -1044,7 +1485,7 @@ function AestheticUI:CreateSlider(section, config)
     local sliderBg = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 8),
         Position = UDim2.new(0, 0, 0, 28),
-        BackgroundColor3 = Theme.Border,
+        BackgroundColor3 = Theme.BorderSoft,
         Parent = container
     })
     addCorner(sliderBg, 4)
@@ -1055,6 +1496,8 @@ function AestheticUI:CreateSlider(section, config)
         Parent = sliderBg
     })
     addCorner(sliderFill, 4)
+    local fillGlow = addAccentGlow(sliderFill, Theme.AccentGlow)
+    fillGlow.ImageTransparency = 0.9
     
     local sliderGradient = createInstance("UIGradient", {
         Color = ColorSequence.new({
@@ -1072,29 +1515,93 @@ function AestheticUI:CreateSlider(section, config)
         Parent = sliderBg
     })
     addCorner(knob, 8)
-    addStroke(knob, Theme.Accent, 2)
+    addStroke(knob, Theme.AccentGlow, 2)
     
     local dragging = false
-    
-    local function updateSlider(input)
-        local pos = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
-        value = math.floor(min + (max - min) * pos)
-        valueLabel.Text = tostring(value)
+
+    local bubble
+    local bubbleLabel
+    if showValueBubble then
+        bubble = createInstance("Frame", {
+            Size = UDim2.new(0, 52, 0, 22),
+            Position = UDim2.new((value - min) / (max - min), 0, 0, -6),
+            AnchorPoint = Vector2.new(0.5, 1),
+            BackgroundColor3 = Theme.SurfaceAlt,
+            BackgroundTransparency = 0.1,
+            Parent = sliderBg
+        })
+        addCorner(bubble, Radius.Subtle)
+        addStroke(bubble, Theme.BorderSoft, 1)
+        addGlass(bubble)
+        bubbleLabel = createInstance("TextLabel", {
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Text = tostring(value),
+            TextColor3 = Theme.Text,
+            TextSize = 11,
+            Font = Enum.Font.GothamMedium,
+            Parent = bubble
+        })
+        bubble.BackgroundTransparency = 1
+        bubbleLabel.TextTransparency = 1
+    end
+
+    local function formatValue(val)
+        if valueFormat then
+            return tostring(valueFormat(val))
+        end
+        return tostring(val)
+    end
+
+    local function applyValue(newValue, silent)
+        value = newValue
+        local pos = (value - min) / (max - min)
+        valueLabel.Text = formatValue(value)
         tween(sliderFill, {Size = UDim2.new(pos, 0, 1, 0)}, TweenPresets.Quick)
         tween(knob, {Position = UDim2.new(pos, 0, 0.5, 0)}, TweenPresets.Quick)
-        pcall(callback, value)
+        if bubble then
+            bubble.Position = UDim2.new(pos, 0, 0, -6)
+            bubbleLabel.Text = formatValue(value)
+        end
+        if not silent then pcall(callback, value) end
+    end
+
+    local function quantize(raw)
+        local clamped = math.clamp(raw, min, max)
+        if step and step > 0 then
+            clamped = math.floor((clamped - min) / step + 0.5) * step + min
+        end
+        return math.clamp(clamped, min, max)
+    end
+
+    local function updateSlider(input)
+        if disabled then return end
+        local pos = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+        local raw = min + (max - min) * pos
+        local nextValue = quantize(raw)
+        applyValue(nextValue)
     end
     
     sliderBg.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if disabled then return end
             dragging = true
+            playSound("Click")
             updateSlider(input)
+            if bubble then
+                tween(bubble, {BackgroundTransparency = 0.1}, TweenPresets.Quick)
+                tween(bubbleLabel, {TextTransparency = 0}, TweenPresets.Quick)
+            end
         end
     end)
     
     sliderBg.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
+            if bubble then
+                tween(bubble, {BackgroundTransparency = 1}, TweenPresets.Quick)
+                tween(bubbleLabel, {TextTransparency = 1}, TweenPresets.Quick)
+            end
         end
     end)
     
@@ -1108,21 +1615,53 @@ function AestheticUI:CreateSlider(section, config)
     end
     
     container.MouseEnter:Connect(function()
+        if disabled then return end
+        playSound("Hover")
         if tooltip ~= "" and _G.AestheticUI_Window then _G.AestheticUI_Window:ShowTooltip(tooltip) end
     end)
     container.MouseLeave:Connect(function()
+        if disabled then return end
         if tooltip ~= "" and _G.AestheticUI_Window then _G.AestheticUI_Window:HideTooltip() end
     end)
     
+    local function setDisabled(state)
+        disabled = state and true or false
+        label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
+        valueLabel.TextColor3 = disabled and Theme.TextSoft or Theme.AccentGlow
+        sliderBg.BackgroundTransparency = disabled and 0.5 or 0
+    end
+
+    registerTheme(function()
+        if container.Parent == nil then return end
+        label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
+        valueLabel.TextColor3 = disabled and Theme.TextSoft or Theme.AccentGlow
+        sliderBg.BackgroundColor3 = Theme.BorderSoft
+        sliderFill.BackgroundColor3 = Theme.Accent
+        sliderGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme.Accent),
+            ColorSequenceKeypoint.new(1, Theme.AccentGlow)
+        })
+        knob.BackgroundColor3 = Theme.Text
+        if bubble then
+            bubble.BackgroundColor3 = Theme.SurfaceAlt
+            bubbleLabel.TextColor3 = Theme.Text
+        end
+    end)
+
+    if _G.AestheticUI_Window then
+        table.insert(_G.AestheticUI_Window._defaults, function()
+            applyValue(default, true)
+            setDisabled(config.Disabled or false)
+        end)
+    end
+
     return {
-        Set = function(_, newValue)
-            value = math.clamp(newValue, min, max)
-            local pos = (value - min) / (max - min)
-            valueLabel.Text = tostring(value)
-            tween(sliderFill, {Size = UDim2.new(pos, 0, 1, 0)}, TweenPresets.Smooth)
-            tween(knob, {Position = UDim2.new(pos, 0, 0.5, 0)}, TweenPresets.Smooth)
+        Set = function(_, newValue, silent)
+            local nextValue = quantize(newValue)
+            applyValue(nextValue, silent)
         end,
-        Get = function() return value end
+        Get = function() return value end,
+        SetDisabled = function(_, state) setDisabled(state) end
     }
 end
 
@@ -1133,6 +1672,8 @@ function AestheticUI:CreateDropdown(section, config)
     local options = config.Options or {}
     local default = config.Default or (options[1] or "")
     local callback = config.Callback or function() end
+    local disabled = config.Disabled or false
+    local emptyText = config.EmptyText or "No results"
     
     local selected = default
     local opened = false
@@ -1158,12 +1699,14 @@ function AestheticUI:CreateDropdown(section, config)
     local dropBtn = createInstance("TextButton", {
         Size = UDim2.new(1, 0, 0, 30),
         Position = UDim2.new(0, 0, 0, 24),
-        BackgroundColor3 = Theme.BackgroundSecondary,
+        BackgroundColor3 = Theme.SurfaceAlt,
+        BackgroundTransparency = 0.2,
         Text = "",
         Parent = container
     })
     addCorner(dropBtn, Radius.Control)
-    addStroke(dropBtn, Theme.Border, 1)
+    local dropStroke = addStroke(dropBtn, Theme.BorderSoft, 1)
+    addGlass(dropBtn)
     
     local searchBar = createInstance("TextBox", {
         Size = UDim2.new(1, -30, 1, 0),
@@ -1171,7 +1714,7 @@ function AestheticUI:CreateDropdown(section, config)
         BackgroundTransparency = 1,
         Text = "",
         PlaceholderText = selected,
-        PlaceholderColor3 = Theme.Text,
+        PlaceholderColor3 = Theme.TextSoft,
         TextColor3 = Theme.Text,
         TextSize = 12,
         Font = Enum.Font.Gotham,
@@ -1185,7 +1728,7 @@ function AestheticUI:CreateDropdown(section, config)
         Position = UDim2.new(0, 10, 0, 0),
         BackgroundTransparency = 1,
         Text = selected,
-        TextColor3 = Theme.TextDim,
+        TextColor3 = Theme.TextSoft,
         TextSize = 12,
         Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -1207,7 +1750,7 @@ function AestheticUI:CreateDropdown(section, config)
     local optionsFrame = createInstance("ScrollingFrame", {
         Size = UDim2.new(1, 0, 0, 0),
         Position = UDim2.new(0, 0, 1, 4),
-        BackgroundColor3 = Theme.BackgroundSecondary,
+        BackgroundColor3 = Theme.Surface,
         BackgroundTransparency = 0.15, -- Keep glass consistency
         ClipsDescendants = true,
         ZIndex = 100, -- High ZIndex for global layering
@@ -1218,7 +1761,8 @@ function AestheticUI:CreateDropdown(section, config)
         Parent = dropBtn
     })
     addCorner(optionsFrame, Radius.Control)
-    addStroke(optionsFrame, Theme.Border, 1)
+    addStroke(optionsFrame, Theme.BorderStrong, 1)
+    addGlass(optionsFrame)
     
     local optionsList = createInstance("UIListLayout", {
         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -1227,6 +1771,19 @@ function AestheticUI:CreateDropdown(section, config)
     createInstance("UIPadding", {
         PaddingTop = UDim.new(0, Spacing.Sm),
         PaddingBottom = UDim.new(0, Spacing.Sm),
+        Parent = optionsFrame
+    })
+
+    local emptyLabel = createInstance("TextLabel", {
+        Size = UDim2.new(1, -16, 0, 24),
+        Position = UDim2.new(0, 8, 0, 0),
+        BackgroundTransparency = 1,
+        Text = emptyText,
+        TextColor3 = Theme.TextSoft,
+        TextSize = 11,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Visible = false,
         Parent = optionsFrame
     })
     
@@ -1239,12 +1796,12 @@ function AestheticUI:CreateDropdown(section, config)
             ZIndex = 101, -- Must be > parent ZIndex (100)
             Parent = optionsFrame
         })
-        createInstance("TextLabel", {
+        local optLabel = createInstance("TextLabel", {
             Size = UDim2.new(1, -16, 1, 0),
             Position = UDim2.new(0, 8, 0, 0),
             BackgroundTransparency = 1,
             Text = option,
-            TextColor3 = Theme.TextDim,
+            TextColor3 = Theme.TextSoft,
             TextSize = 12,
             Font = Enum.Font.Gotham,
             TextXAlignment = Enum.TextXAlignment.Left,
@@ -1252,12 +1809,13 @@ function AestheticUI:CreateDropdown(section, config)
             Parent = optBtn
         })
         optBtn.MouseEnter:Connect(function()
-            tween(optBtn, {BackgroundTransparency = 0.8}, TweenPresets.Quick)
+            tween(optBtn, {BackgroundTransparency = 0.82}, TweenPresets.Quick)
         end)
         optBtn.MouseLeave:Connect(function()
             tween(optBtn, {BackgroundTransparency = 1}, TweenPresets.Quick)
         end)
         optBtn.MouseButton1Click:Connect(function()
+            if disabled then return end
             selected = option
             selectedLabel.Text = option
             searchBar.PlaceholderText = option
@@ -1267,7 +1825,14 @@ function AestheticUI:CreateDropdown(section, config)
             selectedLabel.Visible = true
             tween(optionsFrame, {Size = UDim2.new(1, 0, 0, 0)}, TweenPresets.Spring)
             tween(arrow, {Rotation = 0}, TweenPresets.Quick)
+            tween(dropStroke, {Color = Theme.BorderSoft}, TweenPresets.Quick)
+            if _G.AestheticUI_Window then _G.AestheticUI_Window._config[text] = selected end
             pcall(callback, selected)
+        end)
+
+        registerTheme(function()
+            if optBtn.Parent == nil then return end
+            optLabel.TextColor3 = Theme.TextSoft
         end)
         return optBtn
     end
@@ -1276,6 +1841,16 @@ function AestheticUI:CreateDropdown(section, config)
         createOption(option)
     end
     
+    local function refreshEmptyState()
+        local visibleCount = 0
+        for _, child in ipairs(optionsFrame:GetChildren()) do
+            if child:IsA("TextButton") and child.Visible then
+                visibleCount = visibleCount + 1
+            end
+        end
+        emptyLabel.Visible = visibleCount == 0
+    end
+
     searchBar:GetPropertyChangedSignal("Text"):Connect(function()
         local search = searchBar.Text:lower()
         for _, child in ipairs(optionsFrame:GetChildren()) do
@@ -1287,6 +1862,7 @@ function AestheticUI:CreateDropdown(section, config)
                 end
             end
         end
+        refreshEmptyState()
     end)
     
     local function updateDropdown()
@@ -1294,19 +1870,77 @@ function AestheticUI:CreateDropdown(section, config)
         local optionsHeight = math.min(#options * 26 + 8, 150)
         tween(optionsFrame, {Size = opened and UDim2.new(1, 0, 0, optionsHeight) or UDim2.new(1, 0, 0, 0)}, TweenPresets.Spring)
         tween(arrow, {Rotation = opened and 180 or 0}, TweenPresets.Quick)
+        tween(dropStroke, {Color = opened and Theme.AccentGlow or Theme.BorderSoft}, TweenPresets.Quick)
         searchBar.Visible = opened
         selectedLabel.Visible = not opened
         if opened then searchBar:CaptureFocus() end
+        refreshEmptyState()
     end
     
-    dropBtn.MouseButton1Click:Connect(updateDropdown)
+    dropBtn.MouseButton1Click:Connect(function()
+        if disabled then return end
+        playSound("Click")
+        updateDropdown()
+    end)
+    dropBtn.MouseEnter:Connect(function()
+        if disabled then return end
+        if not opened then
+            tween(dropStroke, {Color = Theme.BorderStrong}, TweenPresets.Quick)
+        end
+    end)
+    dropBtn.MouseLeave:Connect(function()
+        if disabled then return end
+        if not opened then
+            tween(dropStroke, {Color = Theme.BorderSoft}, TweenPresets.Quick)
+        end
+    end)
+
+    container.MouseEnter:Connect(function()
+        if disabled then return end
+        playSound("Hover")
+    end)
     
+    local function setDisabled(state)
+        disabled = state and true or false
+        label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
+        dropBtn.BackgroundTransparency = disabled and 0.6 or 0.2
+        dropStroke.Color = disabled and Theme.BorderSoft or Theme.BorderSoft
+        arrow.TextColor3 = disabled and Theme.TextSoft or Theme.TextDim
+    end
+
+    registerTheme(function()
+        if container.Parent == nil then return end
+        label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
+        dropBtn.BackgroundColor3 = Theme.SurfaceAlt
+        dropStroke.Color = Theme.BorderSoft
+        selectedLabel.TextColor3 = Theme.TextSoft
+        searchBar.PlaceholderColor3 = Theme.TextSoft
+        searchBar.TextColor3 = Theme.Text
+        arrow.TextColor3 = Theme.TextDim
+        optionsFrame.BackgroundColor3 = Theme.Surface
+        optionsFrame.ScrollBarImageColor3 = Theme.Accent
+        emptyLabel.TextColor3 = Theme.TextSoft
+    end)
+
+    if _G.AestheticUI_Window then
+        _G.AestheticUI_Window._config[text] = selected
+        table.insert(_G.AestheticUI_Window._defaults, function()
+            selected = default
+            selectedLabel.Text = selected
+            searchBar.PlaceholderText = selected
+            setDisabled(config.Disabled or false)
+        end)
+    end
+
+    refreshEmptyState()
+
     return {
         Set = function(_, value)
             if table.find(options, value) then
                 selected = value
                 selectedLabel.Text = value
                 searchBar.PlaceholderText = value
+                if _G.AestheticUI_Window then _G.AestheticUI_Window._config[text] = selected end
             end
         end,
         Get = function() return selected end,
@@ -1318,7 +1952,9 @@ function AestheticUI:CreateDropdown(section, config)
             for _, option in ipairs(options) do
                 createOption(option)
             end
-        end
+            refreshEmptyState()
+        end,
+        SetDisabled = function(_, state) setDisabled(state) end
     }
 end
 
@@ -1328,6 +1964,7 @@ function AestheticUI:CreateCheckbox(section, config)
     local text = config.Text or "Checkbox"
     local default = config.Default or false
     local callback = config.Callback or function() end
+    local disabled = config.Disabled or false
     
     local checked = default
     
@@ -1341,10 +1978,11 @@ function AestheticUI:CreateCheckbox(section, config)
         Size = UDim2.new(0, 20, 0, 20),
         Position = UDim2.new(0, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
-        BackgroundColor3 = checked and Theme.Accent or Theme.Border,
+        BackgroundColor3 = checked and Theme.Accent or Theme.BorderSoft,
         Parent = container
     })
     addCorner(checkBox, Radius.Subtle)
+    local checkStroke = addStroke(checkBox, Theme.BorderSoft, 1)
     
     local checkMark = createInstance("TextLabel", {
         Size = UDim2.new(1, 0, 1, 0),
@@ -1357,7 +1995,7 @@ function AestheticUI:CreateCheckbox(section, config)
         Parent = checkBox
     })
     
-    createInstance("TextLabel", {
+    local label = createInstance("TextLabel", {
         Size = UDim2.new(1, -30, 1, 0),
         Position = UDim2.new(0, 28, 0, 0),
         BackgroundTransparency = 1,
@@ -1370,8 +2008,10 @@ function AestheticUI:CreateCheckbox(section, config)
     })
     
     local function updateCheck()
+        if disabled then return end
         checked = not checked
-        tween(checkBox, {BackgroundColor3 = checked and Theme.Accent or Theme.Border}, TweenPresets.Quick)
+        tween(checkBox, {BackgroundColor3 = checked and Theme.Accent or Theme.BorderSoft}, TweenPresets.Quick)
+        tween(checkStroke, {Color = checked and Theme.AccentGlow or Theme.BorderSoft}, TweenPresets.Quick)
         tween(checkMark, {TextTransparency = checked and 0 or 1}, TweenPresets.Quick)
         if checked then
             checkBox.Size = UDim2.new(0, 16, 0, 16)
@@ -1382,9 +2022,12 @@ function AestheticUI:CreateCheckbox(section, config)
     end
     
     container.MouseEnter:Connect(function()
+        if disabled then return end
+        playSound("Hover")
         if config.Tooltip and config.Tooltip ~= "" and _G.AestheticUI_Window then _G.AestheticUI_Window:ShowTooltip(config.Tooltip) end
     end)
     container.MouseLeave:Connect(function()
+        if disabled then return end
         if config.Tooltip and config.Tooltip ~= "" and _G.AestheticUI_Window then _G.AestheticUI_Window:HideTooltip() end
     end)
     
@@ -1394,7 +2037,11 @@ function AestheticUI:CreateCheckbox(section, config)
         Text = "",
         Parent = container
     })
-    btn.MouseButton1Click:Connect(updateCheck)
+    btn.MouseButton1Click:Connect(function()
+        if disabled then return end
+        playSound("Toggle")
+        updateCheck()
+    end)
     
     pcall(function()
         if _G.AestheticUI_Window then
@@ -1402,11 +2049,32 @@ function AestheticUI:CreateCheckbox(section, config)
         end
     end)
     
+    local function setDisabled(state)
+        disabled = state and true or false
+        checkBox.BackgroundTransparency = disabled and 0.4 or 0
+        label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
+    end
+
+    registerTheme(function()
+        if container.Parent == nil then return end
+        checkBox.BackgroundColor3 = checked and Theme.Accent or Theme.BorderSoft
+        checkStroke.Color = checked and Theme.AccentGlow or Theme.BorderSoft
+        label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
+    end)
+
+    if _G.AestheticUI_Window then
+        table.insert(_G.AestheticUI_Window._defaults, function()
+            if default ~= checked then updateCheck() end
+            setDisabled(config.Disabled or false)
+        end)
+    end
+
     return {
         Set = function(_, value)
             if value ~= checked then updateCheck() end
         end,
-        Get = function() return checked end
+        Get = function() return checked end,
+        SetDisabled = function(_, state) setDisabled(state) end
     }
 end
 
@@ -1417,6 +2085,9 @@ function AestheticUI:CreateKeybind(section, config)
     local default = config.Default or Enum.KeyCode.Unknown
     local tooltip = config.Tooltip or ""
     local callback = config.Callback or function() end
+    local disabled = config.Disabled or false
+    local blockConflicts = config.BlockConflicts or false
+    local window = _G.AestheticUI_Window
     
     local key = default
     local listening = false
@@ -1427,7 +2098,7 @@ function AestheticUI:CreateKeybind(section, config)
         Parent = section.Content
     })
     
-    createInstance("TextLabel", {
+    local label = createInstance("TextLabel", {
         Size = UDim2.new(1, -80, 1, 0),
         BackgroundTransparency = 1,
         Text = text,
@@ -1442,53 +2113,140 @@ function AestheticUI:CreateKeybind(section, config)
         Size = UDim2.new(0, 70, 0, 24),
         Position = UDim2.new(1, 0, 0.5, 0),
         AnchorPoint = Vector2.new(1, 0.5),
-        BackgroundColor3 = Theme.BackgroundSecondary,
+        BackgroundColor3 = Theme.SurfaceAlt,
+        BackgroundTransparency = 0.2,
         Text = key.Name or "None",
-        TextColor3 = Theme.TextDim,
+        TextColor3 = Theme.TextSoft,
         TextSize = 11,
         Font = Enum.Font.GothamMedium,
         Parent = container
     })
     addCorner(keyBtn, Radius.Subtle)
-    addStroke(keyBtn, Theme.Border, 1)
+    local keyStroke = addStroke(keyBtn, Theme.BorderSoft, 1)
+    addGlass(keyBtn)
     
+    local function clearKey()
+        key = Enum.KeyCode.Unknown
+        keyBtn.Text = "None"
+        if window then
+            window._config[text] = "None"
+            window._keybinds[text] = Enum.KeyCode.Unknown
+        end
+    end
+
     keyBtn.MouseButton1Click:Connect(function()
+        if disabled then return end
         listening = true
         keyBtn.Text = "..."
-        tween(keyBtn, {BackgroundColor3 = Theme.Accent}, TweenPresets.Quick)
+        tween(keyBtn, {BackgroundColor3 = Theme.AccentSoft}, TweenPresets.Quick)
+        tween(keyStroke, {Color = Theme.AccentGlow}, TweenPresets.Quick)
+    end)
+
+    keyBtn.MouseEnter:Connect(function()
+        if not listening and not disabled then
+            playSound("Hover")
+            tween(keyBtn, {BackgroundTransparency = 0.1}, TweenPresets.Quick)
+            tween(keyStroke, {Color = Theme.BorderStrong}, TweenPresets.Quick)
+        end
+    end)
+    keyBtn.MouseLeave:Connect(function()
+        if not listening and not disabled then
+            tween(keyBtn, {BackgroundTransparency = 0.2}, TweenPresets.Quick)
+            tween(keyStroke, {Color = Theme.BorderSoft}, TweenPresets.Quick)
+        end
+    end)
+
+    keyBtn.MouseButton2Click:Connect(function()
+        if disabled then return end
+        clearKey()
     end)
     
-    if _G.AestheticUI_Window then
+    if window then
+        window._keybinds[text] = key
         local conn = UserInputService.InputBegan:Connect(function(input, processed)
             if listening then
                 if input.UserInputType == Enum.UserInputType.Keyboard then
+                    if input.KeyCode == Enum.KeyCode.Escape or input.KeyCode == Enum.KeyCode.Backspace or input.KeyCode == Enum.KeyCode.Delete then
+                        clearKey()
+                        listening = false
+                        tween(keyBtn, {BackgroundColor3 = Theme.SurfaceAlt}, TweenPresets.Quick)
+                        tween(keyStroke, {Color = Theme.BorderSoft}, TweenPresets.Quick)
+                        return
+                    end
+                    local conflict = false
+                    for name, boundKey in pairs(window._keybinds) do
+                        if name ~= text and boundKey == input.KeyCode then
+                            conflict = true
+                            break
+                        end
+                    end
+                    if conflict and blockConflicts then
+                        tween(keyBtn, {BackgroundColor3 = Theme.Warning}, TweenPresets.Quick)
+                        tween(keyStroke, {Color = Theme.Warning}, TweenPresets.Quick)
+                        playSound("Error")
+                        listening = false
+                        return
+                    end
                     key = input.KeyCode
                     keyBtn.Text = key.Name
                     listening = false
-                    tween(keyBtn, {BackgroundColor3 = Theme.BackgroundSecondary}, TweenPresets.Quick)
+                    window._keybinds[text] = key
+                    tween(keyBtn, {BackgroundColor3 = Theme.SurfaceAlt}, TweenPresets.Quick)
+                    tween(keyStroke, {Color = conflict and Theme.Warning or Theme.BorderSoft}, TweenPresets.Quick)
                     _G.AestheticUI_Window._config[text] = key.Name
+                    if conflict then
+                        playSound("Error")
+                    end
                 end
             elseif not processed and input.KeyCode == key then
                 pcall(callback)
             end
         end)
-        _G.AestheticUI_Window:TrackConnection(conn)
+        window:TrackConnection(conn)
     end
     
     container.MouseEnter:Connect(function()
+        if disabled then return end
+        playSound("Hover")
         if tooltip ~= "" and _G.AestheticUI_Window then _G.AestheticUI_Window:ShowTooltip(tooltip) end
     end)
     container.MouseLeave:Connect(function()
+        if disabled then return end
         if tooltip ~= "" and _G.AestheticUI_Window then _G.AestheticUI_Window:HideTooltip() end
     end)
+
+    local function setDisabled(state)
+        disabled = state and true or false
+        label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
+        keyBtn.BackgroundTransparency = disabled and 0.6 or 0.2
+    end
+
+    registerTheme(function()
+        if container.Parent == nil then return end
+        label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
+        keyBtn.BackgroundColor3 = Theme.SurfaceAlt
+        keyStroke.Color = Theme.BorderSoft
+        keyBtn.TextColor3 = Theme.TextSoft
+    end)
+
+    if window then
+        table.insert(window._defaults, function()
+            key = default
+            keyBtn.Text = key.Name
+            window._keybinds[text] = key
+            setDisabled(config.Disabled or false)
+        end)
+    end
     
     return {
         Set = function(_, newKey)
             key = newKey
             keyBtn.Text = key.Name
-            if _G.AestheticUI_Window then _G.AestheticUI_Window._config[text] = key.Name end
+            if window then window._config[text] = key.Name end
         end,
-        Get = function() return key end
+        Get = function() return key end,
+        Clear = function() clearKey() end,
+        SetDisabled = function(_, state) setDisabled(state) end
     }
 end
 
@@ -1497,16 +2255,23 @@ function AestheticUI:CreateTextInput(section, config)
     config = config or {}
     local text = config.Text or "Input"
     local placeholder = config.Placeholder or ""
+    local defaultValue = config.Default or ""
     local tooltip = config.Tooltip or ""
     local callback = config.Callback or function() end
+    local disabled = config.Disabled or false
+    local validateFn = config.Validate
+    local pattern = config.ValidationPattern
+    local errorText = config.ErrorText or "Invalid value"
+    local validateOnChange = config.ValidateOnChange or false
     
     local container = createInstance("Frame", {
-        Size = UDim2.new(1, 0, 0, 50),
+        Size = UDim2.new(1, 0, 0, 0),
         BackgroundTransparency = 1,
+        AutomaticSize = Enum.AutomaticSize.Y,
         Parent = section.Content
     })
     
-    createInstance("TextLabel", {
+    local label = createInstance("TextLabel", {
         Size = UDim2.new(1, 0, 0, 20),
         BackgroundTransparency = 1,
         Text = text,
@@ -1520,8 +2285,9 @@ function AestheticUI:CreateTextInput(section, config)
     local inputBox = createInstance("TextBox", {
         Size = UDim2.new(1, 0, 0, 28),
         Position = UDim2.new(0, 0, 0, 22),
-        BackgroundColor3 = Theme.BackgroundSecondary,
-        Text = "",
+        BackgroundColor3 = Theme.SurfaceAlt,
+        BackgroundTransparency = 0.2,
+        Text = defaultValue,
         PlaceholderText = placeholder,
         PlaceholderColor3 = Theme.TextDim,
         TextColor3 = Theme.Text,
@@ -1531,32 +2297,115 @@ function AestheticUI:CreateTextInput(section, config)
         Parent = container
     })
     addCorner(inputBox, Radius.Control)
-    local inputStroke = addStroke(inputBox, Theme.Border, 1)
+    local inputStroke = addStroke(inputBox, Theme.BorderSoft, 1)
+    addGlass(inputBox)
+    if _G.AestheticUI_Window then _G.AestheticUI_Window._config[text] = inputBox.Text end
+
+    local errorLabel = createInstance("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 0),
+        Position = UDim2.new(0, 0, 0, 52),
+        BackgroundTransparency = 1,
+        Text = "",
+        TextColor3 = Theme.Danger,
+        TextSize = 11,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = container
+    })
+
+    local function setInvalid(message)
+        tween(inputStroke, {Color = Theme.Danger}, TweenPresets.Quick)
+        errorLabel.Text = message or errorText
+        errorLabel.Size = UDim2.new(1, 0, 0, 16)
+    end
+
+    local function clearInvalid()
+        errorLabel.Text = ""
+        errorLabel.Size = UDim2.new(1, 0, 0, 0)
+    end
+
+    local function runValidation(value)
+        local ok = true
+        local message = nil
+        if pattern and value ~= "" then
+            ok = value:match(pattern) ~= nil
+        end
+        if validateFn then
+            local res, msg = validateFn(value)
+            if res == false then
+                ok = false
+                message = msg
+            end
+        end
+        if ok then
+            clearInvalid()
+        else
+            setInvalid(message)
+        end
+        return ok
+    end
     
     inputBox.Focused:Connect(function()
-        tween(inputStroke, {Color = Theme.Accent}, TweenPresets.Quick)
+        if disabled then return end
+        playSound("Click")
+        tween(inputStroke, {Color = Theme.AccentGlow}, TweenPresets.Quick)
     end)
     inputBox.FocusLost:Connect(function(enterPressed)
-        tween(inputStroke, {Color = Theme.Border}, TweenPresets.Quick)
+        if disabled then return end
+        tween(inputStroke, {Color = Theme.BorderSoft}, TweenPresets.Quick)
+        local ok = runValidation(inputBox.Text)
         if _G.AestheticUI_Window then _G.AestheticUI_Window._config[text] = inputBox.Text end
-        if enterPressed then
+        if enterPressed and ok then
             pcall(callback, inputBox.Text)
         end
     end)
+
+    if validateOnChange then
+        inputBox:GetPropertyChangedSignal("Text"):Connect(function()
+            if disabled then return end
+            runValidation(inputBox.Text)
+        end)
+    end
     
     container.MouseEnter:Connect(function()
+        if disabled then return end
         if tooltip ~= "" and _G.AestheticUI_Window then _G.AestheticUI_Window:ShowTooltip(tooltip) end
     end)
     container.MouseLeave:Connect(function()
+        if disabled then return end
         if tooltip ~= "" and _G.AestheticUI_Window then _G.AestheticUI_Window:HideTooltip() end
     end)
-    
+
+    local function setDisabled(state)
+        disabled = state and true or false
+        inputBox.TextEditable = not disabled
+        inputBox.BackgroundTransparency = disabled and 0.6 or 0.2
+        label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
+    end
+
+    registerTheme(function()
+        if container.Parent == nil then return end
+        label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
+        inputBox.BackgroundColor3 = Theme.SurfaceAlt
+        inputStroke.Color = Theme.BorderSoft
+    end)
+
+    if _G.AestheticUI_Window then
+        table.insert(_G.AestheticUI_Window._defaults, function()
+            inputBox.Text = defaultValue
+            clearInvalid()
+            setDisabled(config.Disabled or false)
+        end)
+    end
+
     return {
         Set = function(_, value)
             inputBox.Text = value
             if _G.AestheticUI_Window then _G.AestheticUI_Window._config[text] = value end
         end,
-        Get = function() return inputBox.Text end
+        Get = function() return inputBox.Text end,
+        Validate = function(_, value) return runValidation(value or inputBox.Text) end,
+        SetDisabled = function(_, state) setDisabled(state) end
     }
 end
 
@@ -1569,7 +2418,7 @@ function AestheticUI:CreateLabel(section, config)
         Size = UDim2.new(1, 0, 0, 20),
         BackgroundTransparency = 1,
         Text = text,
-        TextColor3 = Theme.TextDim,
+        TextColor3 = Theme.TextSoft,
         TextSize = 12,
         Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -1577,6 +2426,11 @@ function AestheticUI:CreateLabel(section, config)
         AutomaticSize = Enum.AutomaticSize.Y,
         Parent = section.Content
     })
+
+    registerTheme(function()
+        if label.Parent == nil then return end
+        label.TextColor3 = Theme.TextSoft
+    end)
     
     return {
         Set = function(_, newText) label.Text = newText end,
@@ -1592,6 +2446,10 @@ function AestheticUI:CreateSeparator(section)
         BorderSizePixel = 0,
         Parent = section.Content
     })
+    registerTheme(function()
+        if separator.Parent == nil then return end
+        separator.BackgroundColor3 = Theme.Border
+    end)
     return separator
 end
 
@@ -1601,6 +2459,7 @@ function AestheticUI:CreateColorPicker(section, config)
     local text = config.Text or "Color"
     local default = config.Default or Color3.fromRGB(138, 43, 226)
     local callback = config.Callback or function() end
+    local disabled = config.Disabled or false
     
     local currentColor = default
     local h, s, v = currentColor:ToHSV()
@@ -1613,7 +2472,7 @@ function AestheticUI:CreateColorPicker(section, config)
         Parent = section.Content
     })
     
-    createInstance("TextLabel", {
+    local label = createInstance("TextLabel", {
         Size = UDim2.new(1, -55, 1, 0), -- Extra padding for the button
         BackgroundTransparency = 1,
         Text = text,
@@ -1633,20 +2492,21 @@ function AestheticUI:CreateColorPicker(section, config)
         Parent = container
     })
     addCorner(colorPreview, Radius.Subtle)
-    addStroke(colorPreview, Theme.Border, 1)
+    local previewStroke = addStroke(colorPreview, Theme.BorderSoft, 1)
     
     local pickerFrame = createInstance("Frame", {
         Size = UDim2.new(0, 200, 0, 0),
         Position = UDim2.new(1, 0, 1, 4),
         AnchorPoint = Vector2.new(1, 0),
-        BackgroundColor3 = Theme.BackgroundSecondary,
+        BackgroundColor3 = Theme.Surface,
         BackgroundTransparency = 0.15, -- Keep glass consistency
         ClipsDescendants = true,
         ZIndex = 100, -- High ZIndex for popups
         Parent = container
     })
     addCorner(pickerFrame, Radius.Container)
-    addStroke(pickerFrame, Theme.Border, 1)
+    addStroke(pickerFrame, Theme.BorderStrong, 1)
+    addGlass(pickerFrame)
     
     -- Saturation/Value box
     local satValBox = createInstance("ImageButton", {
@@ -1699,6 +2559,7 @@ function AestheticUI:CreateColorPicker(section, config)
         Parent = pickerFrame
     })
     addCorner(hueSlider, Radius.Subtle)
+    addStroke(hueSlider, Theme.BorderSoft, 1)
     
     createInstance("UIGradient", {
         Color = ColorSequence.new({
@@ -1737,6 +2598,7 @@ function AestheticUI:CreateColorPicker(section, config)
     
     satValBox.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if disabled then return end
             draggingSV = true
         end
     end)
@@ -1748,6 +2610,7 @@ function AestheticUI:CreateColorPicker(section, config)
     
     hueSlider.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if disabled then return end
             draggingH = true
         end
     end)
@@ -1760,12 +2623,12 @@ function AestheticUI:CreateColorPicker(section, config)
     if _G.AestheticUI_Window then
         local conn = UserInputService.InputChanged:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseMovement then
-                if draggingSV then
+                if draggingSV and not disabled then
                     s = math.clamp((input.Position.X - satValBox.AbsolutePosition.X) / satValBox.AbsoluteSize.X, 0, 1)
                     v = 1 - math.clamp((input.Position.Y - satValBox.AbsolutePosition.Y) / satValBox.AbsoluteSize.Y, 0, 1)
                     satValCursor.Position = UDim2.new(s, 0, 1 - v, 0)
                     updateColor()
-                elseif draggingH then
+                elseif draggingH and not disabled then
                     h = math.clamp((input.Position.X - hueSlider.AbsolutePosition.X) / hueSlider.AbsoluteSize.X, 0, 1)
                     hueCursor.Position = UDim2.new(h, 0, 0.5, 0)
                     updateColor()
@@ -1776,9 +2639,33 @@ function AestheticUI:CreateColorPicker(section, config)
     end
     
     colorPreview.MouseButton1Click:Connect(function()
+        if disabled then return end
+        playSound("Click")
         pickerOpen = not pickerOpen
         tween(pickerFrame, {Size = pickerOpen and UDim2.new(0, 200, 0, 164) or UDim2.new(0, 200, 0, 0)}, TweenPresets.Spring)
     end)
+
+    local function setDisabled(state)
+        disabled = state and true or false
+        label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
+        previewStroke.Color = disabled and Theme.BorderSoft or Theme.BorderSoft
+    end
+
+    registerTheme(function()
+        if container.Parent == nil then return end
+        label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
+        previewStroke.Color = Theme.BorderSoft
+        pickerFrame.BackgroundColor3 = Theme.Surface
+    end)
+
+    if _G.AestheticUI_Window then
+        table.insert(_G.AestheticUI_Window._defaults, function()
+            currentColor = default
+            h, s, v = currentColor:ToHSV()
+            colorPreview.BackgroundColor3 = currentColor
+            setDisabled(config.Disabled or false)
+        end)
+    end
     
     return {
         Set = function(_, color)
@@ -1792,7 +2679,8 @@ function AestheticUI:CreateColorPicker(section, config)
                 _G.AestheticUI_Window._config[text] = {R = color.R, G = color.G, B = color.B}
             end
         end,
-        Get = function() return currentColor end
+        Get = function() return currentColor end,
+        SetDisabled = function(_, state) setDisabled(state) end
     }
 end
 
