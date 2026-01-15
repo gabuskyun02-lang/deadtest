@@ -464,7 +464,8 @@ end
 local Window = AestheticUI:CreateWindow({
     Title = "AESTHETIC DELIVERY",
     Icon = "rbxassetid://10723407389",
-    Logo = "rbxassetid://6031229361"
+    Logo = "rbxassetid://6031229361",
+    Size = UDim2.new(0, 850, 0, 550)
 })
 
 local HomeTab = AestheticUI:CreateTab(Window, { Name = "Home", Icon = "rbxassetid://1072334 density" })
@@ -561,9 +562,6 @@ AestheticUI:CreateSlider(FarmImprovements, {
     Min = 50, Max = 200, Default = 100,
     Callback = function(val) 
         Config.FarmSpeedMultiplier = val / 100
-        if Config.NotificationsEnabled then
-            AestheticUI:Notify({Title = "Farm", Message = string.format("Speed: %.1fx", Config.FarmSpeedMultiplier), Type = "Info"})
-        end
     end
 })
 
@@ -1554,7 +1552,11 @@ task.spawn(function()
     while Config.Alive do
         task.wait(1)
         local elapsed = tick() - Stats.StartTime
-        StatsLabel.Text = string.format("Items: %d | IPM: %.1f | Floor: %d", Stats.ItemsCollected, Stats.ItemsCollected / (elapsed / 60), Stats.CurrentFloor)
+        StatsLabel:Set(string.format("Items: %d | IPM: %.1f | Floor: %d", Stats.ItemsCollected, Stats.ItemsCollected / (elapsed / 60), Stats.CurrentFloor))
+        
+        local statusColor = Config.FarmActive and "#00FF00" or "#FFD700"
+        local statusText = Config.FarmActive and "Farming Active" or "Idle"
+        StatusLabel:Set(string.format("Status: <font color='%s'>%s</font>", statusColor, statusText))
     end
 end)
 
@@ -1750,3 +1752,6 @@ local function isBlacklisted(itemName)
 end
 
 AestheticUI:Notify({ Title = "RuneX Ready", Message = "Refactored Deadly Delivery Active", Type = "Success" })
+
+-- Set UI Toggle Keybind (Right Shift)
+Window:SetBind(Enum.KeyCode.RightShift)

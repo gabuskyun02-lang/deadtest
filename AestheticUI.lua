@@ -696,7 +696,7 @@ function AestheticUI:CreateWindow(config)
     -- Tab container
     local tabContainer = createInstance("Frame", {
         Size = UDim2.new(0, 130, 1, -50),
-        Position = UDim2.new(0, 5, 0, 45),
+        Position = UDim2.new(0, 8, 0, 45),
         BackgroundColor3 = Theme.SurfaceAlt,
         BackgroundTransparency = 0.25,
         Parent = mainFrame
