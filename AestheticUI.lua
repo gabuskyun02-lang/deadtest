@@ -897,7 +897,9 @@ function AestheticUI:CreateWindow(config)
         Text = "",
         TextColor3 = Theme.Text,
         TextSize = 11,
+        TextXAlignment = Enum.TextXAlignment.Left,
         Font = Enum.Font.Gotham,
+        TextWrapped = true,
         ZIndex = 5001,
         Parent = tooltip
     })
@@ -914,8 +916,8 @@ function AestheticUI:CreateWindow(config)
 
     function Window:ShowTooltip(text)
         tooltipLabel.Text = text
-        local size = game:GetService("TextService"):GetTextSize(text, 11, Enum.Font.Gotham, Vector2.new(200, 100))
-        tooltip.Size = UDim2.new(0, size.X + 10, 0, size.Y + 6)
+        local size = game:GetService("TextService"):GetTextSize(text, 11, Enum.Font.Gotham, Vector2.new(280, 100))
+        tooltip.Size = UDim2.new(0, math.min(size.X + 12, 280), 0, size.Y + 8)
         self._tooltipToken = (self._tooltipToken or 0) + 1
         local token = self._tooltipToken
 
