@@ -96,8 +96,8 @@ local Theme = {
     AccentGlow = Color3.fromRGB(165, 128, 240),
     AccentSoft = Color3.fromRGB(98, 70, 180),
     Text = Color3.fromRGB(238, 238, 245),
-    TextDim = Color3.fromRGB(150, 155, 170),
-    TextSoft = Color3.fromRGB(116, 120, 134),
+    TextDim = Color3.fromRGB(168, 172, 186),
+    TextSoft = Color3.fromRGB(136, 140, 154),
     Success = Color3.fromRGB(36, 190, 96),
     Warning = Color3.fromRGB(230, 190, 80),
     Danger = Color3.fromRGB(220, 90, 90),
@@ -117,8 +117,8 @@ local Radius = {
 local Spacing = {
     Xs = 4,
     Sm = 8,
-    Md = 10,
-    Lg = 14
+    Md = 12,
+    Lg = 16
 }
 
 -- Smooth Tween Presets
@@ -564,24 +564,27 @@ function AestheticUI:CreateWindow(config)
     
     -- Window controls
     local closeBtn = createInstance("TextButton", {
-        Size = UDim2.new(0, 30, 0, 30),
+        Size = UDim2.new(0, 26, 0, 26),
         Position = UDim2.new(1, -35, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
         BackgroundColor3 = Theme.Danger,
-        BackgroundTransparency = 0.82,
+        BackgroundTransparency = 0.65,
         Text = "×",
         TextColor3 = Theme.Text,
-        TextSize = 20,
+        TextSize = 16,
         Font = Enum.Font.GothamBold,
         Parent = titleBar
     })
     addCorner(closeBtn, Radius.Control)
+    local closeStroke = addStroke(closeBtn, Theme.BorderSoft, 1)
     
     closeBtn.MouseEnter:Connect(function()
-        tween(closeBtn, {BackgroundTransparency = 0.3}, TweenPresets.Quick)
+        tween(closeBtn, {BackgroundTransparency = 0.4}, TweenPresets.Quick)
+        tween(closeStroke, {Color = Theme.BorderStrong}, TweenPresets.Quick)
     end)
     closeBtn.MouseLeave:Connect(function()
-        tween(closeBtn, {BackgroundTransparency = 0.8}, TweenPresets.Quick)
+        tween(closeBtn, {BackgroundTransparency = 0.65}, TweenPresets.Quick)
+        tween(closeStroke, {Color = Theme.BorderSoft}, TweenPresets.Quick)
     end)
     closeBtn.MouseButton1Click:Connect(function()
         playSound("Click")
@@ -591,25 +594,28 @@ function AestheticUI:CreateWindow(config)
     end)
     
     local minimizeBtn = createInstance("TextButton", {
-        Size = UDim2.new(0, 30, 0, 30),
+        Size = UDim2.new(0, 26, 0, 26),
         Position = UDim2.new(1, -70, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
         BackgroundColor3 = Theme.Warning,
-        BackgroundTransparency = 0.82,
+        BackgroundTransparency = 0.65,
         Text = "−",
         TextColor3 = Theme.Text,
-        TextSize = 20,
+        TextSize = 16,
         Font = Enum.Font.GothamBold,
         Parent = titleBar
     })
     addCorner(minimizeBtn, Radius.Control)
+    local minimizeStroke = addStroke(minimizeBtn, Theme.BorderSoft, 1)
     
     
     minimizeBtn.MouseEnter:Connect(function()
-        tween(minimizeBtn, {BackgroundTransparency = 0.3}, TweenPresets.Quick)
+        tween(minimizeBtn, {BackgroundTransparency = 0.4}, TweenPresets.Quick)
+        tween(minimizeStroke, {Color = Theme.BorderStrong}, TweenPresets.Quick)
     end)
     minimizeBtn.MouseLeave:Connect(function()
-        tween(minimizeBtn, {BackgroundTransparency = 0.8}, TweenPresets.Quick)
+        tween(minimizeBtn, {BackgroundTransparency = 0.65}, TweenPresets.Quick)
+        tween(minimizeStroke, {Color = Theme.BorderSoft}, TweenPresets.Quick)
     end)
     
     
@@ -644,8 +650,10 @@ function AestheticUI:CreateWindow(config)
         if titleBar.Parent == nil then return end
         closeBtn.BackgroundColor3 = Theme.Danger
         closeBtn.TextColor3 = Theme.Text
+        closeStroke.Color = Theme.BorderSoft
         minimizeBtn.BackgroundColor3 = Theme.Warning
         minimizeBtn.TextColor3 = Theme.Text
+        minimizeStroke.Color = Theme.BorderSoft
         resizeIcon.TextColor3 = Theme.Accent
         titleGradient.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Theme.AccentGlow),
@@ -1065,12 +1073,13 @@ function AestheticUI:CreateSection(tab, name)
     local section = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 0),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.30,
+        BackgroundTransparency = 0.26,
         AutomaticSize = Enum.AutomaticSize.Y,
         Parent = tab.Page
     })
     addCorner(section, Radius.Container)
-    addStroke(section, Theme.BorderSoft, 1)
+    addStroke(section, Theme.BorderStrong, 1)
+    addInnerStroke(section, Theme.BorderSoft, 1)
     addGlass(section)
 
     local header = createInstance("Frame", {
@@ -2141,7 +2150,7 @@ function AestheticUI:CreateKeybind(section, config)
         listening = true
         keyBtn.Text = "..."
         tween(keyBtn, {BackgroundColor3 = Theme.AccentSoft}, TweenPresets.Quick)
-        tween(keyStroke, {Color = Theme.AccentGlow}, TweenPresets.Quick)
+        tween(keyStroke, {Color = Theme.AccentGlow, Thickness = 2}, TweenPresets.Quick)
     end)
 
     keyBtn.MouseEnter:Connect(function()
@@ -2172,7 +2181,7 @@ function AestheticUI:CreateKeybind(section, config)
                         clearKey()
                         listening = false
                         tween(keyBtn, {BackgroundColor3 = Theme.SurfaceAlt}, TweenPresets.Quick)
-                        tween(keyStroke, {Color = Theme.BorderSoft}, TweenPresets.Quick)
+                        tween(keyStroke, {Color = Theme.BorderSoft, Thickness = 1}, TweenPresets.Quick)
                         return
                     end
                     local conflict = false
@@ -2184,7 +2193,7 @@ function AestheticUI:CreateKeybind(section, config)
                     end
                     if conflict and blockConflicts then
                         tween(keyBtn, {BackgroundColor3 = Theme.Warning}, TweenPresets.Quick)
-                        tween(keyStroke, {Color = Theme.Warning}, TweenPresets.Quick)
+                        tween(keyStroke, {Color = Theme.Warning, Thickness = 2}, TweenPresets.Quick)
                         playSound("Error")
                         listening = false
                         return
@@ -2194,7 +2203,7 @@ function AestheticUI:CreateKeybind(section, config)
                     listening = false
                     window._keybinds[text] = key
                     tween(keyBtn, {BackgroundColor3 = Theme.SurfaceAlt}, TweenPresets.Quick)
-                    tween(keyStroke, {Color = conflict and Theme.Warning or Theme.BorderSoft}, TweenPresets.Quick)
+                    tween(keyStroke, {Color = conflict and Theme.Warning or Theme.BorderSoft, Thickness = 1}, TweenPresets.Quick)
                     _G.AestheticUI_Window._config[text] = key.Name
                     if conflict then
                         playSound("Error")
@@ -2350,11 +2359,11 @@ function AestheticUI:CreateTextInput(section, config)
     inputBox.Focused:Connect(function()
         if disabled then return end
         playSound("Click")
-        tween(inputStroke, {Color = Theme.AccentGlow}, TweenPresets.Quick)
+        tween(inputStroke, {Color = Theme.AccentGlow, Thickness = 2}, TweenPresets.Quick)
     end)
     inputBox.FocusLost:Connect(function(enterPressed)
         if disabled then return end
-        tween(inputStroke, {Color = Theme.BorderSoft}, TweenPresets.Quick)
+        tween(inputStroke, {Color = Theme.BorderSoft, Thickness = 1}, TweenPresets.Quick)
         local ok = runValidation(inputBox.Text)
         if _G.AestheticUI_Window then _G.AestheticUI_Window._config[text] = inputBox.Text end
         if enterPressed and ok then
