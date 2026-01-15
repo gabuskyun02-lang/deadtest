@@ -96,13 +96,23 @@ function Enhanced:CreateWindow(options)
 end
 
 -- ============================================================
--- SECTION SYSTEM (Nested Collapsible Sidebar Groups)
+-- SECTION SYSTEM (Using WindUI's Native Window:Section)
 -- ============================================================
 
 function Enhanced:_CreateSection(window, options)
     options = options or {}
     
+    -- Use WindUI's NATIVE Window:Section() method!
+    -- This actually creates the sidebar section headers
+    local nativeSection = window:Section({
+        Title = options.Title or "Section",
+        Icon = options.Icon,
+        Opened = options.Opened ~= false
+    })
+    
+    -- Wrap the native section with enhanced functionality
     local section = {
+        _Native = nativeSection,
         Title = options.Title or "Section",
         Icon = options.Icon,
         Collapsible = options.Collapsible ~= false,
@@ -114,11 +124,11 @@ function Enhanced:_CreateSection(window, options)
     
     window._SectionIndex = window._SectionIndex + 1
     
-    -- Add tab management
+    -- Override AddTab to work with the native section
     section.AddTab = function(self, tabOptions)
         tabOptions = tabOptions or {}
         
-        -- Create tab using original WindUI
+        -- Create tab using original WindUI under this section
         local tab = window:Tab(tabOptions)
         
         -- Store reference
@@ -127,36 +137,19 @@ function Enhanced:_CreateSection(window, options)
         -- Add enhanced features to tab
         Enhanced:_EnhanceTab(tab, window)
         
-        -- Initially hide if section is collapsed
-        if not section.Opened then
-            pcall(function()
-                if tab.Frame then
-                    tab.Frame.Visible = false
-                end
-            end)
-        end
-        
         return tab
     end
     
     -- Toggle collapse/expand
     section.Toggle = function(self)
         section.Opened = not section.Opened
-        
-        -- Show/hide tabs
-        for _, tab in ipairs(section.Tabs) do
-            pcall(function()
-                if tab.Frame then
-                    tab.Frame.Visible = section.Opened
-                end
-            end)
-        end
+        -- Note: WindUI's native Section handles collapse automatically
     end
     
     -- Store section
     table.insert(window._Sections, section)
     
-    print("[WindUI Enhanced] Section created: " .. section.Title)
+    print("[WindUI Enhanced] Section created: " .. section.Title .. " (using native Window:Section)")
     return section
 end
 
@@ -178,7 +171,7 @@ function Enhanced:_EnhanceTab(tab, window)
 end
 
 -- ============================================================
--- CARD CONTAINER SYSTEM
+-- CARD CONTAINER SYSTEM (Using Tab:Section for Visual Boxes)
 -- ============================================================
 
 function Enhanced:_CreateCard(tab, options)
@@ -192,180 +185,74 @@ function Enhanced:_CreateCard(tab, options)
         Tab = tab
     }
     
-    -- Create card UI container
-    card.Container = self:_CreateCardUI(card, tab)
+    -- Use WindUI's native Section for visual container!
+    -- Tab:Section creates a collapsible box - perfect for cards
+    card.Container = tab:Section({
+        Title = card.Title,
+        Box = true,  -- Enable box styling
+        Opened = true,  -- Always opened by default
+        FontWeight = "Bold",
+       TextSize = 15
+    })
     
-    -- Wrap element creation methods
+    -- If description provided, add it as paragraph
+    if card.Description then
+        card.Container:Paragraph({
+            Title = "",
+            Desc = card.Description
+        })
+    end
+    
+    -- Wrap element creation methods to use the Section container
     card.Toggle = function(self, toggleOptions)
-        local toggle = tab:Toggle(toggleOptions)
-        Enhanced:_MoveElementToCard(toggle, card)
-        table.insert(card.Elements, toggle)
-        return toggle
+        return card.Container:Toggle(toggleOptions)
     end
     
     card.Slider = function(self, sliderOptions)
-        local slider = tab:Slider(sliderOptions)
-        Enhanced:_MoveElementToCard(slider, card)
-        table.insert(card.Elements, slider)
-        return slider
+        return card.Container:Slider(sliderOptions)
     end
     
     card.Dropdown = function(self, dropdownOptions)
-        local dropdown = tab:Dropdown(dropdownOptions)
-        Enhanced:_MoveElementToCard(dropdown, card)
-        table.insert(card.Elements, dropdown)
-        return dropdown
+        return card.Container:Dropdown(dropdownOptions)
     end
     
     card.Button = function(self, buttonOptions)
-        local button = tab:Button(buttonOptions)
-        Enhanced:_MoveElementToCard(button, card)
-        table.insert(card.Elements, button)
-        return button
+        return card.Container:Button(buttonOptions)
     end
     
     card.Paragraph = function(self, paragraphOptions)
-        local paragraph = tab:Paragraph(paragraphOptions)
-        Enhanced:_MoveElementToCard(paragraph, card)
-        table.insert(card.Elements, paragraph)
-        return paragraph
+        return card.Container:Paragraph(paragraphOptions)
     end
     
     card.Input = function(self, inputOptions)
-        local input = tab:Input(inputOptions)
-        Enhanced:_MoveElementToCard(input, card)
-        table.insert(card.Elements, input)
-        return input
+        return card.Container:Input(inputOptions)
     end
     
     card.Keybind = function(self, keybindOptions)
-        local keybind = tab:Keybind(keybindOptions)
-        Enhanced:_MoveElementToCard(keybind, card)
-        table.insert(card.Elements, keybind)
-        return keybind
+        return card.Container:Keybind(keybindOptions)
     end
     
     card.Colorpicker = function(self, colorpickerOptions)
-        local colorpicker = tab:Colorpicker(colorpickerOptions)
-        Enhanced:_MoveElementToCard(colorpicker, card)
-        table.insert(card.Elements, colorpicker)
-        return colorpicker
+        return card.Container:Colorpicker(colorpickerOptions)
+    end
+    
+    card.Code = function(self, codeOptions)
+        return card.Container:Code(codeOptions)
     end
     
     -- Store card
     table.insert(tab._Cards, card)
     
-    print("[WindUI Enhanced] Card created: " .. card.Title)
+    print("[WindUI Enhanced] Card created: " .. card.Title .. " (using Tab:Section)")
     return card
 end
 
 -- ============================================================
--- CARD UI RENDERING
--- ============================================================
-
-function Enhanced:_CreateCardUI(card, tab)
-    -- Try to access tab's content frame
-    local container = Instance.new("Frame")
-    container.Name = "Card_" .. card.Title
-    container.Size = UDim2.new(1, -20, 0, 0)  -- Auto-size based on content
-    container.AutomaticSize = Enum.AutomaticSize.Y
-    container.BackgroundTransparency = 1
-    
-    -- Create card background with glassmorphism
-    if card.Glass then
-        local cardBg = Instance.new("Frame")
-       cardBg.Name = "CardBackground"
-        cardBg.Size = UDim2.new(1, 0, 1, 0)
-        cardBg.BackgroundColor3 = self.GlassTheme.CardBackground
-        cardBg.BackgroundTransparency = self.GlassTheme.CardBackgroundTransparency
-        cardBg.Parent = container
-        
-        -- Rounded corners
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 12)
-        corner.Parent = cardBg
-        
-        -- Border
-        local stroke = Instance.new("UIStroke")
-        stroke.Color = self.GlassTheme.CardBorder
-        stroke.Transparency = self.GlassTheme.CardBorderTransparency
-        stroke.Thickness = 1
-        stroke.Parent = cardBg
-    end
-    
-    -- Card header (title)
-    local header = Instance.new("TextLabel")
-    header.Name = "CardHeader"
-    header.Size = UDim2.new(1, -24, 0, 30)
-    header.Position = UDim2.new(0, 12, 0, 8)
-    header.BackgroundTransparency = 1
-    header.Text = card.Title
-    header.TextColor3 = self.GlassTheme.TitleText
-    header.TextSize = 14
-    header.Font = Enum.Font.GothamBold
-    header.TextXAlignment = Enum.TextXAlignment.Left
-    header.Parent = container
-    
-    -- Description (if provided)
-    if card.Description then
-        local desc = Instance.new("TextLabel")
-        desc.Name = "CardDescription"
-        desc.Size = UDim2.new(1, -24, 0, 20)
-        desc.Position = UDim2.new(0, 12, 0, 35)
-        desc.BackgroundTransparency = 1
-        desc.Text = card.Description
-        desc.TextColor3 = self.GlassTheme.DescText
-        desc.TextSize = 12
-        desc.Font = Enum.Font.Gotham
-        desc.TextXAlignment = Enum.TextXAlignment.Left
-        desc.Parent = container
-    end
-    
-    -- Content container for elements
-    local content = Instance.new("Frame")
-    content.Name = "CardContent"
-    content.Size = UDim2.new(1, -24, 0, 0)
-    content.Position = UDim2.new(0, 12, 0, card.Description and 60 or 38)
-    content.AutomaticSize = Enum.AutomaticSize.Y
-    content.BackgroundTransparency = 1
-    content.Parent = container
-    
-    -- Layout for content
-    local layout = Instance.new("UIListLayout")
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
-    layout.Padding = UDim.new(0, 8)
-    layout.Parent = content
-    
-    -- Padding
-    local padding = Instance.new("UIPadding")
-    padding.PaddingBottom = UDim.new(0, 12)
-    padding.Parent = container
-    
-    -- Try to parent to tab's content area
-    pcall(function()
-        if tab.Frame and tab.Frame:FindFirstChild("Content") then
-            container.Parent = tab.Frame.Content
-        elseif tab.Frame then
-            container.Parent = tab.Frame
-        end
-    end)
-    
-    return container
-end
-
--- ============================================================
--- HELPER: Move Element to Card
+-- HELPER: Move Element to Card (NOT NEEDED - using Tab:Section)
 -- ============================================================
 
 function Enhanced:_MoveElementToCard(element, card)
-    pcall(function()
-        if element.Frame and card.Container then
-            local content = card.Container:FindFirstChild("CardContent")
-            if content then
-                element.Frame.Parent = content
-            end
-        end
-    end)
+    -- Not needed anymore - Tab:Section handles parenting
 end
 
 -- ============================================================
