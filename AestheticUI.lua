@@ -90,8 +90,8 @@ end
 local Theme = {
     Background = Color3.fromRGB(14, 14, 18),
     BackgroundSecondary = Color3.fromRGB(18, 18, 24),
-    Surface = Color3.fromRGB(20, 22, 28),
-    SurfaceAlt = Color3.fromRGB(26, 28, 35),
+    Surface = Color3.fromRGB(18, 20, 26),
+    SurfaceAlt = Color3.fromRGB(22, 24, 30),
     Accent = Color3.fromRGB(110, 140, 255),
     AccentSoft = Color3.fromRGB(90, 115, 200),
     AccentGlow = Color3.fromRGB(130, 160, 255),
@@ -101,15 +101,15 @@ local Theme = {
     Success = Color3.fromRGB(90, 200, 140),
     Warning = Color3.fromRGB(255, 180, 70),
     Danger = Color3.fromRGB(255, 90, 100),
-    BorderSoft = Color3.fromRGB(45, 48, 58),
-    BorderStrong = Color3.fromRGB(60, 64, 78),
+    BorderSoft = Color3.fromRGB(40, 42, 50),
+    BorderStrong = Color3.fromRGB(55, 58, 68),
     -- Card system colors
-    CardBg = Color3.fromRGB(28, 30, 38),
-    CardBorder = Color3.fromRGB(55, 58, 70),
-    CardHeader = Color3.fromRGB(32, 34, 42),
+    CardBg = Color3.fromRGB(24, 26, 32),
+    CardBorder = Color3.fromRGB(48, 52, 62),
+    CardHeader = Color3.fromRGB(28, 30, 36),
     -- Section header color
     SectionHeader = Color3.fromRGB(140, 145, 165),
-    Glass = 0.90
+    Glass = 0.88
 }
 
 local Radius = {
@@ -180,11 +180,12 @@ local function addGlass(parent)
     return createInstance("UIGradient", {
         Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 200, 220))
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 185, 200))
         }),
         Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.3),
-            NumberSequenceKeypoint.new(1, 0.6)
+            NumberSequenceKeypoint.new(0, 0.88),
+            NumberSequenceKeypoint.new(0.5, 0.92),
+            NumberSequenceKeypoint.new(1, 0.95)
         }),
         Rotation = 90,
         Parent = parent
@@ -526,7 +527,7 @@ function AestheticUI:CreateWindow(config)
         Position = UDim2.new(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundColor3 = Theme.Surface,
-        BackgroundTransparency = 0.15,
+        BackgroundTransparency = 0.25,
         Parent = screenGui
     })
     addCorner(mainFrame, Radius.Window)
@@ -589,7 +590,7 @@ function AestheticUI:CreateWindow(config)
     local titleBar = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 40),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.25,
+        BackgroundTransparency = 0.35,
         Parent = mainFrame
     })
     addCorner(titleBar, Radius.Window)
@@ -600,7 +601,7 @@ function AestheticUI:CreateWindow(config)
         Size = UDim2.new(1, 0, 0, 12),
         Position = UDim2.new(0, 0, 1, -12),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.25,
+        BackgroundTransparency = 0.35,
         BorderSizePixel = 0,
         Parent = titleBar
     })
@@ -773,7 +774,7 @@ function AestheticUI:CreateWindow(config)
         Size = UDim2.new(0, 130, 1, -50),
         Position = UDim2.new(0, 8, 0, 45),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.25,
+        BackgroundTransparency = 0.35,
         Parent = mainFrame
     })
     addCorner(tabContainer, Radius.Container)
@@ -1645,7 +1646,7 @@ function AestheticUI:CreateSection(tab, name)
     local section = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 0),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.26,
+        BackgroundTransparency = 0.40,
         AutomaticSize = Enum.AutomaticSize.Y,
         Parent = tab.Page
     })
@@ -1770,7 +1771,7 @@ function AestheticUI:CreateCard(section, config)
     local card = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 0),
         BackgroundColor3 = Theme.CardBg,
-        BackgroundTransparency = 0.15,
+        BackgroundTransparency = 0.30,
         AutomaticSize = Enum.AutomaticSize.Y,
         Parent = section.Content
     })
