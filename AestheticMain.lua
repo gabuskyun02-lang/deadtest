@@ -1014,8 +1014,9 @@ AestheticUI:CreateButton(UtilSection, {
 })
 
 -- Settings Tab
+local DEFAULT_TOGGLE_KEY = Enum.KeyCode.RightShift
 local KeybindSection = AestheticUI:CreateSection(SettingsTab, "Keybind Settings")
-ToggleKeyLabel = AestheticUI:CreateLabel(KeybindSection, "Current Toggle Key: LeftControl")
+ToggleKeyLabel = AestheticUI:CreateLabel(KeybindSection, "Current Toggle Key: " .. DEFAULT_TOGGLE_KEY.Name)
 
 AestheticUI:CreateButton(KeybindSection, {
     Text = "Change Toggle Key (Press Any Key)",
@@ -1753,5 +1754,5 @@ end
 
 AestheticUI:Notify({ Title = "RuneX Ready", Message = "Refactored Deadly Delivery Active", Type = "Success" })
 
--- Set UI Toggle Keybind (Right Shift)
-Window:SetBind(Enum.KeyCode.RightShift)
+-- Set UI Toggle Keybind
+Window:SetBind(DEFAULT_TOGGLE_KEY)
