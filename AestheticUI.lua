@@ -87,17 +87,31 @@ end
 
 -- Theme Configuration
 local Theme = {
-    Background = Color3.fromRGB(15, 15, 20),
-    BackgroundSecondary = Color3.fromRGB(22, 22, 30),
-    Accent = Color3.fromRGB(138, 43, 226),
-    AccentGlow = Color3.fromRGB(168, 85, 247),
-    Text = Color3.fromRGB(245, 245, 250),
-    TextDim = Color3.fromRGB(156, 163, 175),
-    Success = Color3.fromRGB(34, 197, 94),
-    Warning = Color3.fromRGB(250, 204, 21),
-    Danger = Color3.fromRGB(239, 68, 68),
-    Border = Color3.fromRGB(45, 45, 55),
+    Background = Color3.fromRGB(16, 16, 20),
+    BackgroundSecondary = Color3.fromRGB(20, 20, 26),
+    Accent = Color3.fromRGB(122, 72, 220),
+    AccentGlow = Color3.fromRGB(154, 112, 230),
+    Text = Color3.fromRGB(236, 236, 242),
+    TextDim = Color3.fromRGB(140, 145, 160),
+    Success = Color3.fromRGB(36, 190, 96),
+    Warning = Color3.fromRGB(230, 190, 80),
+    Danger = Color3.fromRGB(220, 90, 90),
+    Border = Color3.fromRGB(38, 38, 46),
     Glass = 0.92
+}
+
+local Radius = {
+    Window = 12,
+    Container = 10,
+    Control = 6,
+    Subtle = 4
+}
+
+local Spacing = {
+    Xs = 4,
+    Sm = 6,
+    Md = 8,
+    Lg = 12
 }
 
 -- Smooth Tween Presets
@@ -134,25 +148,15 @@ end
 
 local function addGlow(parent)
     local glow = createInstance("ImageLabel", {
-        Size = UDim2.new(1, 30, 1, 30),
+        Size = UDim2.new(1, 24, 1, 24),
         Position = UDim2.new(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundTransparency = 1,
         Image = "rbxassetid://5028857084",
         ImageColor3 = Theme.Accent,
-        ImageTransparency = 0.85,
+        ImageTransparency = 0.9,
         Parent = parent
     })
-    
-    -- Breathing animation
-    task.spawn(function()
-        while glow.Parent do
-            tween(glow, {ImageTransparency = 0.6}, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut))
-            task.wait(2)
-            tween(glow, {ImageTransparency = 0.85}, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut))
-            task.wait(2)
-        end
-    end)
     
     return glow
 end
@@ -171,7 +175,7 @@ local function createNotificationContainer(parent)
     })
     createInstance("UIListLayout", {
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 8),
+        Padding = UDim.new(0, Spacing.Md),
         VerticalAlignment = Enum.VerticalAlignment.Bottom,
         Parent = NotificationContainer
     })
@@ -200,7 +204,7 @@ function AestheticUI:Notify(config)
         ZIndex = 6001,
         Parent = NotificationContainer
     })
-    addCorner(notif, 10)
+    addCorner(notif, Radius.Container)
     addStroke(notif, accentColor, 1)
     
     local dismissed = false
@@ -338,7 +342,7 @@ function AestheticUI:CreateWindow(config)
         BackgroundTransparency = 0.05,
         Parent = screenGui
     })
-    addCorner(mainFrame, 12)
+    addCorner(mainFrame, Radius.Window)
     addStroke(mainFrame, Theme.Border, 1)
     addGlow(mainFrame)
     
@@ -349,7 +353,7 @@ function AestheticUI:CreateWindow(config)
         BackgroundTransparency = 0.3,
         Parent = mainFrame
     })
-    addCorner(titleBar, 12)
+    addCorner(titleBar, Radius.Window)
     
     -- Fix bottom corners of title
     createInstance("Frame", {
@@ -390,12 +394,12 @@ function AestheticUI:CreateWindow(config)
         BackgroundColor3 = Theme.Danger,
         BackgroundTransparency = 0.8,
         Text = "×",
-        TextColor3 = Theme.Danger,
+        TextColor3 = Theme.Text,
         TextSize = 20,
         Font = Enum.Font.GothamBold,
         Parent = titleBar
     })
-    addCorner(closeBtn, 6)
+    addCorner(closeBtn, Radius.Control)
     
     closeBtn.MouseEnter:Connect(function()
         tween(closeBtn, {BackgroundTransparency = 0.3}, TweenPresets.Quick)
@@ -416,12 +420,12 @@ function AestheticUI:CreateWindow(config)
         BackgroundColor3 = Theme.Warning,
         BackgroundTransparency = 0.8,
         Text = "−",
-        TextColor3 = Theme.Warning,
+        TextColor3 = Theme.Text,
         TextSize = 20,
         Font = Enum.Font.GothamBold,
         Parent = titleBar
     })
-    addCorner(minimizeBtn, 6)
+    addCorner(minimizeBtn, Radius.Control)
     
     
     minimizeBtn.MouseEnter:Connect(function()
@@ -507,17 +511,17 @@ function AestheticUI:CreateWindow(config)
         BackgroundTransparency = 0.5,
         Parent = mainFrame
     })
-    addCorner(tabContainer, 8)
+    addCorner(tabContainer, Radius.Container)
     
     local tabList = createInstance("UIListLayout", {
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 4),
+        Padding = UDim.new(0, Spacing.Xs),
         Parent = tabContainer
     })
     createInstance("UIPadding", {
-        PaddingTop = UDim.new(0, 8),
-        PaddingLeft = UDim.new(0, 8),
-        PaddingRight = UDim.new(0, 8),
+        PaddingTop = UDim.new(0, Spacing.Md),
+        PaddingLeft = UDim.new(0, Spacing.Md),
+        PaddingRight = UDim.new(0, Spacing.Md),
         Parent = tabContainer
     })
     
@@ -594,7 +598,7 @@ function AestheticUI:CreateWindow(config)
         ZIndex = 5000,
         Parent = screenGui
     })
-    addCorner(tooltip, 4)
+    addCorner(tooltip, Radius.Subtle)
     addStroke(tooltip, Theme.Accent, 1)
     
     local tooltipLabel = createInstance("TextLabel", {
@@ -705,7 +709,7 @@ function AestheticUI:CreateTab(window, config)
         Text = "",
         Parent = window.TabContainer
     })
-    addCorner(tabBtn, 6)
+    addCorner(tabBtn, Radius.Control)
     
     local tabLabel = createInstance("TextLabel", {
         Size = UDim2.new(1, -10, 1, 0),
@@ -744,13 +748,13 @@ function AestheticUI:CreateTab(window, config)
     
     createInstance("UIListLayout", {
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 8),
+        Padding = UDim.new(0, Spacing.Md),
         Parent = tabPage
     })
     createInstance("UIPadding", {
-        PaddingTop = UDim.new(0, 5),
-        PaddingBottom = UDim.new(0, 5),
-        PaddingRight = UDim.new(0, 10),
+        PaddingTop = UDim.new(0, Spacing.Sm),
+        PaddingBottom = UDim.new(0, Spacing.Sm),
+        PaddingRight = UDim.new(0, Spacing.Lg),
         Parent = tabPage
     })
     
@@ -809,7 +813,7 @@ function AestheticUI:CreateSection(tab, name)
         AutomaticSize = Enum.AutomaticSize.Y,
         Parent = tab.Page
     })
-    addCorner(section, 8)
+    addCorner(section, Radius.Container)
     addStroke(section, Theme.Border, 1)
     
     local sectionLabel = createInstance("TextLabel", {
@@ -834,11 +838,11 @@ function AestheticUI:CreateSection(tab, name)
     
     createInstance("UIListLayout", {
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 8),
+        Padding = UDim.new(0, Spacing.Md),
         Parent = contentFrame
     })
     createInstance("UIPadding", {
-        PaddingBottom = UDim.new(0, 10),
+        PaddingBottom = UDim.new(0, Spacing.Lg),
         Parent = contentFrame
     })
     
@@ -859,7 +863,7 @@ function AestheticUI:CreateButton(section, config)
         Text = "",
         Parent = section.Content
     })
-    addCorner(btn, 6)
+    addCorner(btn, Radius.Control)
     
     local btnLabel = createInstance("TextLabel", {
         Size = UDim2.new(1, 0, 1, 0),
@@ -871,23 +875,10 @@ function AestheticUI:CreateButton(section, config)
         Parent = btn
     })
     
-    -- Ripple effect
+    -- Subtle press feedback
     btn.MouseButton1Click:Connect(function()
-        local ripple = createInstance("Frame", {
-            Size = UDim2.new(0, 0, 0, 0),
-            Position = UDim2.new(0.5, 0, 0.5, 0),
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            BackgroundColor3 = Theme.AccentGlow,
-            BackgroundTransparency = 0.5,
-            Parent = btn
-        })
-        addCorner(ripple, 100)
-        
-        tween(ripple, {Size = UDim2.new(2, 0, 2, 0), BackgroundTransparency = 1}, TweenPresets.Smooth)
-        task.delay(0.3, function() ripple:Destroy() end)
-        
-        tween(btn, {BackgroundTransparency = 0.4}, TweenPresets.Quick)
-        task.delay(0.1, function()
+        tween(btn, {BackgroundTransparency = 0.5}, TweenPresets.Quick)
+        task.delay(0.12, function()
             tween(btn, {BackgroundTransparency = 0.7}, TweenPresets.Quick)
         end)
         
@@ -1171,7 +1162,7 @@ function AestheticUI:CreateDropdown(section, config)
         Text = "",
         Parent = container
     })
-    addCorner(dropBtn, 6)
+    addCorner(dropBtn, Radius.Control)
     addStroke(dropBtn, Theme.Border, 1)
     
     local searchBar = createInstance("TextBox", {
@@ -1217,7 +1208,7 @@ function AestheticUI:CreateDropdown(section, config)
         Size = UDim2.new(1, 0, 0, 0),
         Position = UDim2.new(0, 0, 1, 4),
         BackgroundColor3 = Theme.BackgroundSecondary,
-        BackgroundTransparency = 0, -- Fully opaque for readability
+        BackgroundTransparency = 0.15, -- Keep glass consistency
         ClipsDescendants = true,
         ZIndex = 100, -- High ZIndex for global layering
         ScrollBarThickness = 2,
@@ -1226,7 +1217,7 @@ function AestheticUI:CreateDropdown(section, config)
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         Parent = dropBtn
     })
-    addCorner(optionsFrame, 6)
+    addCorner(optionsFrame, Radius.Control)
     addStroke(optionsFrame, Theme.Border, 1)
     
     local optionsList = createInstance("UIListLayout", {
@@ -1234,8 +1225,8 @@ function AestheticUI:CreateDropdown(section, config)
         Parent = optionsFrame
     })
     createInstance("UIPadding", {
-        PaddingTop = UDim.new(0, 4),
-        PaddingBottom = UDim.new(0, 4),
+        PaddingTop = UDim.new(0, Spacing.Sm),
+        PaddingBottom = UDim.new(0, Spacing.Sm),
         Parent = optionsFrame
     })
     
@@ -1353,7 +1344,7 @@ function AestheticUI:CreateCheckbox(section, config)
         BackgroundColor3 = checked and Theme.Accent or Theme.Border,
         Parent = container
     })
-    addCorner(checkBox, 4)
+    addCorner(checkBox, Radius.Subtle)
     
     local checkMark = createInstance("TextLabel", {
         Size = UDim2.new(1, 0, 1, 0),
@@ -1458,7 +1449,7 @@ function AestheticUI:CreateKeybind(section, config)
         Font = Enum.Font.GothamMedium,
         Parent = container
     })
-    addCorner(keyBtn, 4)
+    addCorner(keyBtn, Radius.Subtle)
     addStroke(keyBtn, Theme.Border, 1)
     
     keyBtn.MouseButton1Click:Connect(function()
@@ -1539,7 +1530,7 @@ function AestheticUI:CreateTextInput(section, config)
         ClearTextOnFocus = false,
         Parent = container
     })
-    addCorner(inputBox, 6)
+    addCorner(inputBox, Radius.Control)
     local inputStroke = addStroke(inputBox, Theme.Border, 1)
     
     inputBox.Focused:Connect(function()
@@ -1641,7 +1632,7 @@ function AestheticUI:CreateColorPicker(section, config)
         Text = "",
         Parent = container
     })
-    addCorner(colorPreview, 4)
+    addCorner(colorPreview, Radius.Subtle)
     addStroke(colorPreview, Theme.Border, 1)
     
     local pickerFrame = createInstance("Frame", {
@@ -1649,12 +1640,12 @@ function AestheticUI:CreateColorPicker(section, config)
         Position = UDim2.new(1, 0, 1, 4),
         AnchorPoint = Vector2.new(1, 0),
         BackgroundColor3 = Theme.BackgroundSecondary,
-        BackgroundTransparency = 0, -- Fully opaque
+        BackgroundTransparency = 0.15, -- Keep glass consistency
         ClipsDescendants = true,
         ZIndex = 100, -- High ZIndex for popups
         Parent = container
     })
-    addCorner(pickerFrame, 8)
+    addCorner(pickerFrame, Radius.Container)
     addStroke(pickerFrame, Theme.Border, 1)
     
     -- Saturation/Value box
@@ -1665,7 +1656,7 @@ function AestheticUI:CreateColorPicker(section, config)
         ZIndex = 101, -- Must be > pickerFrame (100)
         Parent = pickerFrame
     })
-    addCorner(satValBox, 4)
+    addCorner(satValBox, Radius.Subtle)
     
     createInstance("UIGradient", {
         Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(1, 1, 1)),
@@ -1680,7 +1671,7 @@ function AestheticUI:CreateColorPicker(section, config)
         ZIndex = 102,
         Parent = satValBox
     })
-    addCorner(satValOverlay, 4)
+    addCorner(satValOverlay, Radius.Subtle)
     createInstance("UIGradient", {
         Color = ColorSequence.new(Color3.new(0, 0, 0), Color3.new(0, 0, 0)),
         Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0)}),
@@ -1707,7 +1698,7 @@ function AestheticUI:CreateColorPicker(section, config)
         ZIndex = 101, -- Must be > pickerFrame (100)
         Parent = pickerFrame
     })
-    addCorner(hueSlider, 4)
+    addCorner(hueSlider, Radius.Subtle)
     
     createInstance("UIGradient", {
         Color = ColorSequence.new({
