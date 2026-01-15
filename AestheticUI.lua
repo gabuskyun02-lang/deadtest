@@ -1451,6 +1451,7 @@ function AestheticUI:CreateTab(window, config)
         TextSize = 13,
         Font = Enum.Font.GothamMedium,
         TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 2,
         Parent = tabBtn
     })
     
@@ -1463,6 +1464,7 @@ function AestheticUI:CreateTab(window, config)
             BackgroundTransparency = 1,
             Image = icon,
             ImageColor3 = Theme.TextDim,
+            ZIndex = 2,
             Parent = tabBtn
         })
     end
@@ -1666,6 +1668,7 @@ function AestheticUI:CreateSidebarSection(window, config)
             TextSize = 12,
             Font = Enum.Font.GothamMedium,
             TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 2,
             Parent = tabBtn
         })
         
@@ -1678,6 +1681,7 @@ function AestheticUI:CreateSidebarSection(window, config)
                 BackgroundTransparency = 1,
                 Image = icon,
                 ImageColor3 = Theme.TextDim,
+                ZIndex = 2,
                 Parent = tabBtn
             })
         end
@@ -1828,6 +1832,7 @@ function AestheticUI:CreateSection(tab, name)
         TextSize = 12,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 2,
         Parent = header
     })
 
@@ -1889,6 +1894,7 @@ function AestheticUI:CreateSection(tab, name)
             TextColor3 = Theme.TextSoft,
             TextSize = 11,
             Font = Enum.Font.GothamMedium,
+            ZIndex = 2,
             Parent = actionBtn
         })
         actionBtn.MouseEnter:Connect(function()
@@ -2060,6 +2066,7 @@ function AestheticUI:CreateButton(section, config)
         TextColor3 = Theme.Text,
         TextSize = 13,
         Font = Enum.Font.GothamMedium,
+        ZIndex = 2,
         Parent = btn
     })
     
@@ -2399,6 +2406,7 @@ function AestheticUI:CreateSlider(section, config)
             TextColor3 = Theme.Text,
             TextSize = 10,
             Font = Enum.Font.GothamMedium,
+            ZIndex = 2,
             Parent = bubble
         })
     end
@@ -2580,6 +2588,7 @@ function AestheticUI:CreateDropdown(section, config)
         Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
         Visible = false,
+        ZIndex = 2,
         Parent = dropBtn
     })
     
@@ -2592,6 +2601,7 @@ function AestheticUI:CreateDropdown(section, config)
         TextSize = 12,
         Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 2,
         Parent = dropBtn
     })
     
@@ -2604,6 +2614,7 @@ function AestheticUI:CreateDropdown(section, config)
         TextSize = 10,
         Font = Enum.Font.Gotham,
         Rotation = 0,
+        ZIndex = 2,
         Parent = dropBtn
     })
     
