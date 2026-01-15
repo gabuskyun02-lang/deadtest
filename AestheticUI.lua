@@ -520,6 +520,56 @@ function AestheticUI:CreateWindow(config)
     local mainInner = addInnerStroke(mainFrame, Theme.BorderSoft, 1)
     addGlass(mainFrame)
     addGlow(mainFrame)
+
+    local miniDock = createInstance("TextButton", {
+        Size = UDim2.new(0, 180, 0, 28),
+        Position = UDim2.new(0, 18, 1, -46),
+        AnchorPoint = Vector2.new(0, 1),
+        BackgroundColor3 = Theme.SurfaceAlt,
+        BackgroundTransparency = 0.2,
+        Text = "",
+        Visible = false,
+        ZIndex = 6001,
+        Parent = screenGui
+    })
+    addCorner(miniDock, Radius.Control)
+    local dockStroke = addStroke(miniDock, Theme.BorderSoft, 1)
+    addGlass(miniDock)
+    createInstance("Frame", {
+        Size = UDim2.new(0, 3, 1, -10),
+        Position = UDim2.new(0, 10, 0, 5),
+        BackgroundColor3 = Theme.AccentGlow,
+        BorderSizePixel = 0,
+        Parent = miniDock
+    })
+    local dockLabel = createInstance("TextLabel", {
+        Size = UDim2.new(1, -22, 1, 0),
+        Position = UDim2.new(0, 16, 0, 0),
+        BackgroundTransparency = 1,
+        Text = title,
+        TextColor3 = Theme.Text,
+        TextSize = 12,
+        Font = Enum.Font.GothamMedium,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = miniDock
+    })
+    miniDock.MouseEnter:Connect(function()
+        tween(miniDock, {BackgroundTransparency = 0.05}, TweenPresets.Quick)
+        tween(dockStroke, {Color = Theme.BorderStrong}, TweenPresets.Quick)
+    end)
+    miniDock.MouseLeave:Connect(function()
+        tween(miniDock, {BackgroundTransparency = 0.2}, TweenPresets.Quick)
+        tween(dockStroke, {Color = Theme.BorderSoft}, TweenPresets.Quick)
+    end)
+
+    local function getDockPos()
+        return UDim2.new(
+            miniDock.Position.X.Scale,
+            miniDock.Position.X.Offset + (miniDock.Size.X.Offset * 0.5),
+            miniDock.Position.Y.Scale,
+            miniDock.Position.Y.Offset - (miniDock.Size.Y.Offset * 0.5)
+        )
+    end
     
     -- Title bar
     local titleBar = createInstance("Frame", {
@@ -655,6 +705,9 @@ function AestheticUI:CreateWindow(config)
         minimizeBtn.TextColor3 = Theme.Text
         minimizeStroke.Color = Theme.BorderSoft
         resizeIcon.TextColor3 = Theme.Accent
+        miniDock.BackgroundColor3 = Theme.SurfaceAlt
+        dockStroke.Color = Theme.BorderSoft
+        dockLabel.TextColor3 = Theme.Text
         titleGradient.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Theme.AccentGlow),
             ColorSequenceKeypoint.new(1, Theme.Text)
@@ -775,14 +828,27 @@ function AestheticUI:CreateWindow(config)
     function Window:Toggle()
         self._visible = not self._visible
         if self._visible then
+            miniDock.Visible = false
             mainFrame.Visible = true
             local targetSize = self._lastSize or size
-            tween(mainFrame, {Size = targetSize, BackgroundTransparency = 0.08}, TweenPresets.Spring)
+            local targetPos = self._lastPos or UDim2.new(0.5, 0, 0.5, 0)
+            mainFrame.Size = miniDock.Size
+            mainFrame.Position = getDockPos()
+            mainFrame.BackgroundTransparency = 1
+            tween(mainFrame, {Size = targetSize, Position = targetPos, BackgroundTransparency = 0.15}, TweenPresets.Spring)
         else
-            self._lastSize = mainFrame.Size -- Store current size before hiding
-            local t = tween(mainFrame, {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1}, TweenPresets.Quick)
+            self._lastSize = mainFrame.Size
+            self._lastPos = mainFrame.Position
+            local t = tween(mainFrame, {
+                Size = miniDock.Size,
+                Position = getDockPos(),
+                BackgroundTransparency = 1
+            }, TweenPresets.Smooth)
             t.Completed:Connect(function()
-                if not self._visible then mainFrame.Visible = false end
+                if not self._visible then
+                    mainFrame.Visible = false
+                    miniDock.Visible = true
+                end
             end)
         end
     end
@@ -793,6 +859,11 @@ function AestheticUI:CreateWindow(config)
     end
 
     minimizeBtn.MouseButton1Click:Connect(function()
+        playSound("Click")
+        toggleVisibility()
+    end)
+
+    miniDock.MouseButton1Click:Connect(function()
         playSound("Click")
         toggleVisibility()
     end)
