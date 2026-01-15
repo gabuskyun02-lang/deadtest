@@ -174,8 +174,8 @@ local function addGlass(parent)
             ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 200, 220))
         }),
         Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.96),
-            NumberSequenceKeypoint.new(1, 1)
+            NumberSequenceKeypoint.new(0, 0.3),
+            NumberSequenceKeypoint.new(1, 0.6)
         }),
         Rotation = 90,
         Parent = parent
