@@ -109,7 +109,7 @@ local Theme = {
     CardHeader = Color3.fromRGB(28, 34, 46),
     -- Section header color
     SectionHeader = Color3.fromRGB(120, 135, 155),
-    Glass = 0.92
+    Glass = 0.94
 }
 
 local Radius = {
@@ -270,6 +270,18 @@ local function addBlurSimulation(parent)
         Rotation = 45,
         Parent = frostBase
     })
+
+    local noiseImage = createInstance("ImageLabel", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Image = "rbxassetid://5553946656",
+        ImageTransparency = math.clamp(baseTrans + 0.06, 0, 1),
+        ImageColor3 = Color3.fromRGB(255, 255, 255),
+        ScaleType = Enum.ScaleType.Tile,
+        TileSize = UDim2.new(0, 140, 0, 140),
+        ZIndex = frostZ,
+        Parent = frostBase
+    })
     
     -- Layer 3: Light diffusion (simulates light scatter through glass)
     local lightDiffusion = createInstance("Frame", {
@@ -288,6 +300,23 @@ local function addBlurSimulation(parent)
         }),
         Rotation = 135,
         Parent = lightDiffusion
+    })
+
+    local topHighlight = createInstance("Frame", {
+        Size = UDim2.new(1, 0, 0, 34),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BackgroundTransparency = math.clamp(baseTrans - 0.08, 0, 1),
+        BorderSizePixel = 0,
+        ZIndex = frostZ,
+        Parent = frostBase
+    })
+    createInstance("UIGradient", {
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.05),
+            NumberSequenceKeypoint.new(1, 1)
+        }),
+        Rotation = 90,
+        Parent = topHighlight
     })
     
     return frostBase
@@ -616,7 +645,7 @@ function AestheticUI:CreateWindow(config)
     if blurEnabled == nil then
         blurEnabled = true
     end
-    local blurSize = tonumber(config.BlurSize) or 12
+    local blurSize = tonumber(config.BlurSize) or 20
     local blurEffect = nil
     if blurEnabled then
         blurEffect = Instance.new("BlurEffect")
@@ -631,7 +660,7 @@ function AestheticUI:CreateWindow(config)
         Position = UDim2.new(0.5, 0, 0.5, 0),
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundColor3 = Theme.Surface,
-        BackgroundTransparency = 0.35,
+        BackgroundTransparency = 0.75,
         Parent = screenGui
     })
     addCorner(mainFrame, Radius.Window)
@@ -646,7 +675,7 @@ function AestheticUI:CreateWindow(config)
         Position = UDim2.new(0, 18, 1, -46),
         AnchorPoint = Vector2.new(0, 1),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.3,
+        BackgroundTransparency = 0.7,
         Text = "",
         Visible = false,
         ZIndex = 6001,
@@ -674,11 +703,11 @@ function AestheticUI:CreateWindow(config)
         Parent = miniDock
     })
     miniDock.MouseEnter:Connect(function()
-        tween(miniDock, {BackgroundTransparency = 0.05}, TweenPresets.Quick)
+        tween(miniDock, {BackgroundTransparency = 0.55}, TweenPresets.Quick)
         tween(dockStroke, {Color = Theme.BorderStrong}, TweenPresets.Quick)
     end)
     miniDock.MouseLeave:Connect(function()
-        tween(miniDock, {BackgroundTransparency = 0.2}, TweenPresets.Quick)
+        tween(miniDock, {BackgroundTransparency = 0.7}, TweenPresets.Quick)
         tween(dockStroke, {Color = Theme.BorderSoft}, TweenPresets.Quick)
     end)
 
@@ -695,18 +724,19 @@ function AestheticUI:CreateWindow(config)
     local titleBar = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 40),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.5,
+        BackgroundTransparency = 0.8,
         Parent = mainFrame
     })
     addCorner(titleBar, Radius.Window)
     addGlass(titleBar)
+    addBlurSimulation(titleBar)
     
     -- Fix bottom corners of title
     local titleFill = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 12),
         Position = UDim2.new(0, 0, 1, -12),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.5,
+        BackgroundTransparency = 0.8,
         BorderSizePixel = 0,
         Parent = titleBar
     })
@@ -882,7 +912,7 @@ function AestheticUI:CreateWindow(config)
         Size = UDim2.new(0, 130, 1, -50),
         Position = UDim2.new(0, 8, 0, 45),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.5,
+        BackgroundTransparency = 0.78,
         Parent = mainFrame
     })
     addCorner(tabContainer, Radius.Container)
@@ -1132,13 +1162,14 @@ function AestheticUI:CreateWindow(config)
             Size = UDim2.new(1, -155, 0, 32),
             Position = UDim2.new(0, 150, 0, 45),
             BackgroundColor3 = Theme.SurfaceAlt,
-            BackgroundTransparency = 0.2,
+            BackgroundTransparency = 0.8,
             ClipsDescendants = true,
             Parent = mainFrame
         })
         addCorner(configHeader, Radius.Container)
         local headerStroke = addStroke(configHeader, Theme.BorderSoft, 1)
         addGlass(configHeader)
+        addBlurSimulation(configHeader)
         
         -- Shift content container down
         contentContainer.Position = UDim2.new(0, 150, 0, 82)
@@ -1402,6 +1433,8 @@ function AestheticUI:CreateTab(window, config)
         Parent = window.TabContainer
     })
     addCorner(tabBtn, Radius.Control)
+    addGlass(tabBtn)
+    addBlurSimulation(tabBtn)
     
     local tabLabel = createInstance("TextLabel", {
         Size = UDim2.new(1, -10, 1, 0),
@@ -1615,6 +1648,8 @@ function AestheticUI:CreateSidebarSection(window, config)
             Parent = self.TabsContainer
         })
         addCorner(tabBtn, Radius.Control)
+        addGlass(tabBtn)
+        addBlurSimulation(tabBtn)
         
         local tabLabel = createInstance("TextLabel", {
             Size = UDim2.new(1, -10, 1, 0),
@@ -1762,7 +1797,7 @@ function AestheticUI:CreateSection(tab, name)
     local section = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 0),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.40,
+        BackgroundTransparency = 0.78,
         AutomaticSize = Enum.AutomaticSize.Y,
         Parent = tab.Page
     })
@@ -1770,6 +1805,7 @@ function AestheticUI:CreateSection(tab, name)
     addStroke(section, Theme.BorderStrong, 1)
     addInnerStroke(section, Theme.BorderSoft, 1)
     addGlass(section)
+    addBlurSimulation(section)
 
     local header = createInstance("Frame", {
         Size = UDim2.new(1, -16, 0, 26),
@@ -1832,13 +1868,14 @@ function AestheticUI:CreateSection(tab, name)
         local actionBtn = createInstance("TextButton", {
             Size = UDim2.new(0, 60, 0, 20),
             BackgroundColor3 = Theme.Surface,
-            BackgroundTransparency = 0.2,
+            BackgroundTransparency = 0.6,
             Text = "",
             Parent = actionContainer
         })
         addCorner(actionBtn, Radius.Subtle)
         local actionStroke = addStroke(actionBtn, Theme.BorderSoft, 1)
         addGlass(actionBtn)
+        addBlurSimulation(actionBtn)
         local actionLabel = createInstance("TextLabel", {
             Size = UDim2.new(1, 0, 1, 0),
             BackgroundTransparency = 1,
@@ -1849,11 +1886,11 @@ function AestheticUI:CreateSection(tab, name)
             Parent = actionBtn
         })
         actionBtn.MouseEnter:Connect(function()
-            tween(actionBtn, {BackgroundTransparency = 0.05}, TweenPresets.Quick)
+            tween(actionBtn, {BackgroundTransparency = 0.45}, TweenPresets.Quick)
             tween(actionStroke, {Color = Theme.BorderStrong}, TweenPresets.Quick)
         end)
         actionBtn.MouseLeave:Connect(function()
-            tween(actionBtn, {BackgroundTransparency = 0.2}, TweenPresets.Quick)
+            tween(actionBtn, {BackgroundTransparency = 0.6}, TweenPresets.Quick)
             tween(actionStroke, {Color = Theme.BorderSoft}, TweenPresets.Quick)
         end)
         actionBtn.MouseButton1Click:Connect(function()
@@ -1887,7 +1924,7 @@ function AestheticUI:CreateCard(section, config)
     local card = createInstance("Frame", {
         Size = UDim2.new(1, 0, 0, 0),
         BackgroundColor3 = Theme.CardBg,
-        BackgroundTransparency = 0.45,
+        BackgroundTransparency = 0.8,
         AutomaticSize = Enum.AutomaticSize.Y,
         Parent = section.Content
     })
@@ -2001,13 +2038,14 @@ function AestheticUI:CreateButton(section, config)
     local btn = createInstance("TextButton", {
         Size = UDim2.new(1, 0, 0, 32),
         BackgroundColor3 = Theme.AccentSoft,
-        BackgroundTransparency = 0.6,
+        BackgroundTransparency = 0.75,
         Text = "",
         Parent = section.Content
     })
     addCorner(btn, Radius.Control)
     local btnStroke = addStroke(btn, Theme.BorderSoft, 1)
     addGlass(btn)
+    addBlurSimulation(btn)
     
     local btnLabel = createInstance("TextLabel", {
         Size = UDim2.new(1, 0, 1, 0),
@@ -2022,7 +2060,7 @@ function AestheticUI:CreateButton(section, config)
     local function setDisabled(state)
         disabled = state and true or false
         btn.AutoButtonColor = not disabled
-        btn.BackgroundTransparency = disabled and 0.8 or 0.6
+        btn.BackgroundTransparency = disabled and 0.85 or 0.75
         btnLabel.TextColor3 = disabled and Theme.TextSoft or Theme.Text
         btnStroke.Color = disabled and Theme.BorderSoft or Theme.BorderSoft
     end
@@ -2040,9 +2078,9 @@ function AestheticUI:CreateButton(section, config)
     btn.MouseButton1Click:Connect(function()
         if disabled then return end
         playSound("Click")
-        tween(btn, {BackgroundTransparency = 0.35}, TweenPresets.Quick)
+        tween(btn, {BackgroundTransparency = 0.55}, TweenPresets.Quick)
         task.delay(0.12, function()
-            tween(btn, {BackgroundTransparency = 0.6}, TweenPresets.Quick)
+            tween(btn, {BackgroundTransparency = 0.75}, TweenPresets.Quick)
         end)
         
         pcall(callback)
@@ -2051,13 +2089,13 @@ function AestheticUI:CreateButton(section, config)
     btn.MouseEnter:Connect(function()
         if disabled then return end
         playSound("Hover")
-        tween(btn, {BackgroundTransparency = 0.45}, TweenPresets.Quick)
+        tween(btn, {BackgroundTransparency = 0.6}, TweenPresets.Quick)
         tween(btnStroke, {Color = Theme.AccentGlow}, TweenPresets.Quick)
         if tooltip ~= "" and _G.AestheticUI_Window then _G.AestheticUI_Window:ShowTooltip(tooltip) end
     end)
     btn.MouseLeave:Connect(function()
         if disabled then return end
-        tween(btn, {BackgroundTransparency = 0.6}, TweenPresets.Quick)
+        tween(btn, {BackgroundTransparency = 0.75}, TweenPresets.Quick)
         tween(btnStroke, {Color = Theme.BorderSoft}, TweenPresets.Quick)
         if tooltip ~= "" and _G.AestheticUI_Window then _G.AestheticUI_Window:HideTooltip() end
     end)
@@ -2297,9 +2335,11 @@ function AestheticUI:CreateSlider(section, config)
         Size = UDim2.new(1, 0, 0, 8),
         Position = UDim2.new(0, 0, 0, 28),
         BackgroundColor3 = Theme.BorderSoft,
+        BackgroundTransparency = 0.6,
         Parent = container
     })
     addCorner(sliderBg, 4)
+    addGlass(sliderBg)
     
     local sliderFill = createInstance("Frame", {
         Size = UDim2.new((value - min) / (max - min), 0, 1, 0),
@@ -2338,13 +2378,14 @@ function AestheticUI:CreateSlider(section, config)
             Position = UDim2.new((value - min) / (max - min), 0, 0, -8),
             AnchorPoint = Vector2.new(0.5, 1),
             BackgroundColor3 = Theme.SurfaceAlt,
-            BackgroundTransparency = 1,
+            BackgroundTransparency = 0.7,
             Visible = false,
             Parent = sliderBg
         })
         addCorner(bubble, Radius.Subtle)
         addStroke(bubble, Theme.BorderSoft, 1)
         addGlass(bubble)
+        addBlurSimulation(bubble)
         bubbleLabel = createInstance("TextLabel", {
             Size = UDim2.new(1, 0, 1, 0),
             BackgroundTransparency = 1,
@@ -2440,7 +2481,7 @@ function AestheticUI:CreateSlider(section, config)
         disabled = state and true or false
         label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
         valueLabel.TextColor3 = disabled and Theme.TextSoft or Theme.AccentGlow
-        sliderBg.BackgroundTransparency = disabled and 0.5 or 0
+        sliderBg.BackgroundTransparency = disabled and 0.75 or 0.6
     end
 
     registerTheme(function()
@@ -2512,13 +2553,14 @@ function AestheticUI:CreateDropdown(section, config)
         Size = UDim2.new(1, 0, 0, 30),
         Position = UDim2.new(0, 0, 0, 24),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.2,
+        BackgroundTransparency = 0.65,
         Text = "",
         Parent = container
     })
     addCorner(dropBtn, Radius.Control)
     local dropStroke = addStroke(dropBtn, Theme.BorderSoft, 1)
     addGlass(dropBtn)
+    addBlurSimulation(dropBtn)
     
     local searchBar = createInstance("TextBox", {
         Size = UDim2.new(1, -30, 1, 0),
@@ -2563,7 +2605,7 @@ function AestheticUI:CreateDropdown(section, config)
         Size = UDim2.new(1, 0, 0, 0),
         Position = UDim2.new(0, 0, 1, 4),
         BackgroundColor3 = Theme.Surface,
-        BackgroundTransparency = 0.15, -- Keep glass consistency
+        BackgroundTransparency = 0.65, -- Keep glass consistency
         ClipsDescendants = true,
         ZIndex = 100, -- High ZIndex for global layering
         ScrollBarThickness = 2,
@@ -2575,6 +2617,7 @@ function AestheticUI:CreateDropdown(section, config)
     addCorner(optionsFrame, Radius.Control)
     addStroke(optionsFrame, Theme.BorderStrong, 1)
     addGlass(optionsFrame)
+    addBlurSimulation(optionsFrame)
     
     local optionsList = createInstance("UIListLayout", {
         SortOrder = Enum.SortOrder.LayoutOrder,
@@ -2715,7 +2758,7 @@ function AestheticUI:CreateDropdown(section, config)
     local function setDisabled(state)
         disabled = state and true or false
         label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
-        dropBtn.BackgroundTransparency = disabled and 0.6 or 0.2
+        dropBtn.BackgroundTransparency = disabled and 0.75 or 0.65
         dropStroke.Color = disabled and Theme.BorderSoft or Theme.BorderSoft
         arrow.TextColor3 = disabled and Theme.TextSoft or Theme.TextDim
     end
@@ -2926,7 +2969,7 @@ function AestheticUI:CreateKeybind(section, config)
         Position = UDim2.new(1, 0, 0.5, 0),
         AnchorPoint = Vector2.new(1, 0.5),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.2,
+        BackgroundTransparency = 0.65,
         Text = key.Name or "None",
         TextColor3 = Theme.TextSoft,
         TextSize = 11,
@@ -2936,6 +2979,7 @@ function AestheticUI:CreateKeybind(section, config)
     addCorner(keyBtn, Radius.Subtle)
     local keyStroke = addStroke(keyBtn, Theme.BorderSoft, 1)
     addGlass(keyBtn)
+    addBlurSimulation(keyBtn)
     
     local function clearKey()
         key = Enum.KeyCode.Unknown
@@ -2957,13 +3001,13 @@ function AestheticUI:CreateKeybind(section, config)
     keyBtn.MouseEnter:Connect(function()
         if not listening and not disabled then
             playSound("Hover")
-            tween(keyBtn, {BackgroundTransparency = 0.1}, TweenPresets.Quick)
+            tween(keyBtn, {BackgroundTransparency = 0.5}, TweenPresets.Quick)
             tween(keyStroke, {Color = Theme.BorderStrong}, TweenPresets.Quick)
         end
     end)
     keyBtn.MouseLeave:Connect(function()
         if not listening and not disabled then
-            tween(keyBtn, {BackgroundTransparency = 0.2}, TweenPresets.Quick)
+            tween(keyBtn, {BackgroundTransparency = 0.65}, TweenPresets.Quick)
             tween(keyStroke, {Color = Theme.BorderSoft}, TweenPresets.Quick)
         end
     end)
@@ -3030,7 +3074,7 @@ function AestheticUI:CreateKeybind(section, config)
     local function setDisabled(state)
         disabled = state and true or false
         label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
-        keyBtn.BackgroundTransparency = disabled and 0.6 or 0.2
+        keyBtn.BackgroundTransparency = disabled and 0.75 or 0.65
     end
 
     registerTheme(function()
@@ -3098,7 +3142,7 @@ function AestheticUI:CreateTextInput(section, config)
         Size = UDim2.new(1, 0, 0, 28),
         Position = UDim2.new(0, 0, 0, 22),
         BackgroundColor3 = Theme.SurfaceAlt,
-        BackgroundTransparency = 0.2,
+        BackgroundTransparency = 0.65,
         Text = defaultValue,
         PlaceholderText = placeholder,
         PlaceholderColor3 = Theme.TextDim,
@@ -3111,6 +3155,7 @@ function AestheticUI:CreateTextInput(section, config)
     addCorner(inputBox, Radius.Control)
     local inputStroke = addStroke(inputBox, Theme.BorderSoft, 1)
     addGlass(inputBox)
+    addBlurSimulation(inputBox)
     if _G.AestheticUI_Window then _G.AestheticUI_Window._config[text] = inputBox.Text end
 
     local errorLabel = createInstance("TextLabel", {
@@ -3191,7 +3236,7 @@ function AestheticUI:CreateTextInput(section, config)
     local function setDisabled(state)
         disabled = state and true or false
         inputBox.TextEditable = not disabled
-        inputBox.BackgroundTransparency = disabled and 0.6 or 0.2
+        inputBox.BackgroundTransparency = disabled and 0.75 or 0.65
         label.TextColor3 = disabled and Theme.TextSoft or Theme.Text
     end
 
@@ -3316,7 +3361,7 @@ function AestheticUI:CreateColorPicker(section, config)
         Position = UDim2.new(1, 0, 1, 4),
         AnchorPoint = Vector2.new(1, 0),
         BackgroundColor3 = Theme.Surface,
-        BackgroundTransparency = 0.15, -- Keep glass consistency
+        BackgroundTransparency = 0.65, -- Keep glass consistency
         ClipsDescendants = true,
         ZIndex = 100, -- High ZIndex for popups
         Parent = container
@@ -3324,6 +3369,7 @@ function AestheticUI:CreateColorPicker(section, config)
     addCorner(pickerFrame, Radius.Container)
     addStroke(pickerFrame, Theme.BorderStrong, 1)
     addGlass(pickerFrame)
+    addBlurSimulation(pickerFrame)
     
     -- Saturation/Value box
     local satValBox = createInstance("ImageButton", {
