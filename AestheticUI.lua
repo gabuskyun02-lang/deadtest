@@ -90,35 +90,44 @@ end
 local Theme = {
     Background = Color3.fromRGB(14, 14, 18),
     BackgroundSecondary = Color3.fromRGB(18, 18, 24),
-    Surface = Color3.fromRGB(22, 22, 30),
-    SurfaceAlt = Color3.fromRGB(26, 26, 34),
-    Accent = Color3.fromRGB(120, 76, 230),
-    AccentGlow = Color3.fromRGB(165, 128, 240),
-    AccentSoft = Color3.fromRGB(98, 70, 180),
-    Text = Color3.fromRGB(238, 238, 245),
-    TextDim = Color3.fromRGB(168, 172, 186),
-    TextSoft = Color3.fromRGB(136, 140, 154),
-    Success = Color3.fromRGB(36, 190, 96),
-    Warning = Color3.fromRGB(230, 190, 80),
-    Danger = Color3.fromRGB(220, 90, 90),
-    Border = Color3.fromRGB(40, 40, 52),
-    BorderSoft = Color3.fromRGB(34, 34, 44),
-    BorderStrong = Color3.fromRGB(64, 64, 80),
-    Glass = 0.92
+    Surface = Color3.fromRGB(20, 22, 28),
+    SurfaceAlt = Color3.fromRGB(26, 28, 35),
+    Accent = Color3.fromRGB(110, 140, 255),
+    AccentSoft = Color3.fromRGB(90, 115, 200),
+    AccentGlow = Color3.fromRGB(130, 160, 255),
+    Text = Color3.fromRGB(245, 247, 255),
+    TextSoft = Color3.fromRGB(185, 190, 205),
+    TextDim = Color3.fromRGB(125, 130, 145),
+    Success = Color3.fromRGB(90, 200, 140),
+    Warning = Color3.fromRGB(255, 180, 70),
+    Danger = Color3.fromRGB(255, 90, 100),
+    BorderSoft = Color3.fromRGB(45, 48, 58),
+    BorderStrong = Color3.fromRGB(60, 64, 78),
+    -- Card system colors
+    CardBg = Color3.fromRGB(28, 30, 38),
+    CardBorder = Color3.fromRGB(55, 58, 70),
+    CardHeader = Color3.fromRGB(32, 34, 42),
+    -- Section header color
+    SectionHeader = Color3.fromRGB(140, 145, 165),
+    Glass = 0.90
 }
 
 local Radius = {
-    Window = 14,
-    Container = 12,
-    Control = 7,
-    Subtle = 5
+    Window = 12,
+    Container = 10,
+    Card = 8,
+    Control = 6,
+    Subtle = 4
 }
 
 local Spacing = {
+    Xxs = 2,
     Xs = 4,
     Sm = 8,
     Md = 12,
-    Lg = 16
+    Lg = 16,
+    Xl = 20,
+    Xxl = 24
 }
 
 -- Smooth Tween Presets
@@ -206,6 +215,21 @@ local function addAccentGlow(parent, color)
         Image = "rbxassetid://5028857084",
         ImageColor3 = color or Theme.AccentGlow,
         ImageTransparency = 1,
+        Parent = parent
+    })
+end
+
+local function addCardShadow(parent)
+    -- Subtle shadow for card depth perception
+    return createInstance("ImageLabel", {
+        Size = UDim2.new(1, 8, 1, 8),
+        Position = UDim2.new(0.5, 0, 0.5, 1),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 1,
+        Image = "rbxassetid://5028857084",
+        ImageColor3 = Color3.fromRGB(0, 0, 0),
+        ImageTransparency = 0.85,
+        ZIndex = -1,
         Parent = parent
     })
 end
@@ -977,6 +1001,251 @@ function AestheticUI:CreateWindow(config)
         return nil
     end
     
+    -- Create Collapsible Config Header (Preset Management)
+    function Window:CreateConfigHeader(config)
+        config = config or {}
+        local title = config.Title or "Presets"
+        local isExpanded = false
+        
+        -- Adjust content container position to make room for header
+        local originalContentPos = contentContainer.Position
+        
+        -- Config header frame
+        local configHeader = createInstance("Frame", {
+            Size = UDim2.new(1, -155, 0, 32),
+            Position = UDim2.new(0, 150, 0, 45),
+            BackgroundColor3 = Theme.SurfaceAlt,
+            BackgroundTransparency = 0.2,
+            ClipsDescendants = true,
+            Parent = mainFrame
+        })
+        addCorner(configHeader, Radius.Container)
+        local headerStroke = addStroke(configHeader, Theme.BorderSoft, 1)
+        addGlass(configHeader)
+        
+        -- Shift content container down
+        contentContainer.Position = UDim2.new(0, 150, 0, 82)
+        contentContainer.Size = UDim2.new(1, -155, 1, -90)
+        
+        -- Header toggle button
+        local headerBtn = createInstance("TextButton", {
+            Size = UDim2.new(1, 0, 0, 32),
+            BackgroundTransparency = 1,
+            Text = "",
+            Parent = configHeader
+        })
+        
+        local headerLabel = createInstance("TextLabel", {
+            Size = UDim2.new(1, -40, 1, 0),
+            Position = UDim2.new(0, 12, 0, 0),
+            BackgroundTransparency = 1,
+            Text = title,
+            TextColor3 = Theme.TextSoft,
+            TextSize = 12,
+            Font = Enum.Font.GothamMedium,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = headerBtn
+        })
+        
+        local chevron = createInstance("TextLabel", {
+            Size = UDim2.new(0, 16, 0, 16),
+            Position = UDim2.new(1, -24, 0.5, 0),
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            BackgroundTransparency = 1,
+            Text = "›",
+            TextColor3 = Theme.TextSoft,
+            TextSize = 16,
+            Font = Enum.Font.GothamBold,
+            Rotation = 0,
+            Parent = headerBtn
+        })
+        
+        -- Expanded content (preset controls)
+        local expandedContainer = createInstance("Frame", {
+            Size = UDim2.new(1, -16, 0, 0),
+            Position = UDim2.new(0, 8, 0, 36),
+            BackgroundTransparency = 1,
+            Visible = false,
+            Parent = configHeader
+        })
+        
+        createInstance("UIListLayout", {
+            FillDirection = Enum.FillDirection.Horizontal,
+            HorizontalAlignment = Enum.HorizontalAlignment.Left,
+            Padding = UDim.new(0, Spacing.Sm),
+            Parent = expandedContainer
+        })
+        
+        -- Search/Dropdown for presets
+        local presetDropdown = createInstance("Frame", {
+            Size = UDim2.new(0, 150, 0, 28),
+            BackgroundColor3 = Theme.Surface,
+            BackgroundTransparency = 0.3,
+            Parent = expandedContainer
+        })
+        addCorner(presetDropdown, Radius.Control)
+        addStroke(presetDropdown, Theme.BorderSoft, 1)
+        
+        local presetLabel = createInstance("TextLabel", {
+            Size = UDim2.new(1, -30, 1, 0),
+            Position = UDim2.new(0, 10, 0, 0),
+            BackgroundTransparency = 1,
+            Text = "Select Preset",
+            TextColor3 = Theme.TextSoft,
+            TextSize = 11,
+            Font = Enum.Font.Gotham,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextTruncate = Enum.TextTruncate.AtEnd,
+            Parent = presetDropdown
+        })
+        
+        createInstance("TextLabel", {
+            Size = UDim2.new(0, 16, 0, 16),
+            Position = UDim2.new(1, -20, 0.5, 0),
+            AnchorPoint = Vector2.new(0, 0.5),
+            BackgroundTransparency = 1,
+            Text = "▼",
+            TextColor3 = Theme.TextDim,
+            TextSize = 8,
+            Parent = presetDropdown
+        })
+        
+        -- Save button
+        local saveBtn = createInstance("TextButton", {
+            Size = UDim2.new(0, 60, 0, 28),
+            BackgroundColor3 = Theme.AccentSoft,
+            BackgroundTransparency = 0.6,
+            Text = "",
+            Parent = expandedContainer
+        })
+        addCorner(saveBtn, Radius.Control)
+        local saveBtnStroke = addStroke(saveBtn, Theme.BorderSoft, 1)
+        
+        createInstance("TextLabel", {
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Text = "Save",
+            TextColor3 = Theme.Text,
+            TextSize = 11,
+            Font = Enum.Font.GothamMedium,
+            Parent = saveBtn
+        })
+        
+        -- Load button
+        local loadBtn = createInstance("TextButton", {
+            Size = UDim2.new(0, 60, 0, 28),
+            BackgroundColor3 = Theme.AccentSoft,
+            BackgroundTransparency = 0.6,
+            Text = "",
+            Parent = expandedContainer
+        })
+        addCorner(loadBtn, Radius.Control)
+        addStroke(loadBtn, Theme.BorderSoft, 1)
+        
+        createInstance("TextLabel", {
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Text = "Load",
+            TextColor3 = Theme.Text,
+            TextSize = 11,
+            Font = Enum.Font.GothamMedium,
+            Parent = loadBtn
+        })
+       
+        -- Delete button
+        local deleteBtn = createInstance("TextButton", {
+            Size = UDim2.new(0, 60, 0, 28),
+            BackgroundColor3 = Theme.Danger,
+            BackgroundTransparency = 0.75,
+            Text = "",
+            Parent = expandedContainer
+        })
+        addCorner(deleteBtn, Radius.Control)
+        addStroke(deleteBtn, Theme.BorderSoft, 1)
+        
+        createInstance("TextLabel", {
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Text = "Delete",
+            TextColor3 = Theme.Text,
+            TextSize = 11,
+            Font = Enum.Font.GothamMedium,
+            Parent = deleteBtn
+        })
+        
+        local ConfigHeaderObj = {
+            Frame = configHeader,
+            IsExpanded = isExpanded,
+            OnSave = config.OnSave,
+            OnLoad = config.OnLoad,
+            OnDelete = config.OnDelete
+        }
+        
+        function ConfigHeaderObj:Toggle()
+            self.IsExpanded = not self.IsExpanded
+            
+            local targetHeight = self.IsExpanded and 78 or 32
+            tween(configHeader, {Size = UDim2.new(1, -155, 0, targetHeight)}, TweenPresets.Smooth)
+            tween(chevron, {Rotation = self.IsExpanded and 90 or 0}, TweenPresets.Smooth)
+            
+            if self.IsExpanded then
+                expandedContainer.Visible = true
+            else
+                task.delay(0.22, function()
+                    if not self.IsExpanded then
+                        expandedContainer.Visible = false
+                    end
+                end)
+            end
+        end
+        
+        headerBtn.MouseButton1Click:Connect(function()
+            playSound("Click")
+            ConfigHeaderObj:Toggle()
+        end)
+        
+        headerBtn.MouseEnter:Connect(function()
+            tween(headerLabel, {TextColor3 = Theme.Text}, TweenPresets.Quick)
+        end)
+        
+        headerBtn.MouseLeave:Connect(function()
+            tween(headerLabel, {TextColor3 = Theme.TextSoft}, TweenPresets.Quick)
+        end)
+        
+        -- Button functionality
+        saveBtn.MouseButton1Click:Connect(function()
+            playSound("Click")
+            if ConfigHeaderObj.OnSave then
+                pcall(ConfigHeaderObj.OnSave)
+            end
+        end)
+        
+        loadBtn.MouseButton1Click:Connect(function()
+            playSound("Click")
+            if ConfigHeaderObj.OnLoad then
+                pcall(ConfigHeaderObj.OnLoad)
+            end
+        end)
+        
+        deleteBtn.MouseButton1Click:Connect(function()
+            playSound("Click")
+            if ConfigHeaderObj.OnDelete then
+                pcall(ConfigHeaderObj.OnDelete)
+            end
+        end)
+        
+        registerTheme(function()
+            if configHeader.Parent == nil then return end
+            configHeader.BackgroundColor3 = Theme.SurfaceAlt
+            headerStroke.Color = Theme.BorderSoft
+            headerLabel.TextColor3 = Theme.TextSoft
+            chevron.TextColor3 = Theme.TextSoft
+        end)
+        
+        return ConfigHeaderObj
+    end
+
+    
     -- Animate window in
     mainFrame.Size = UDim2.new(0, 0, 0, 0)
     mainFrame.BackgroundTransparency = 1
@@ -1124,6 +1393,246 @@ function AestheticUI:CreateTab(window, config)
     return Tab
 end
 
+-- Create Sidebar Section (for nested structure like GENERAL, MISCELLANEOUS)
+function AestheticUI:CreateSidebarSection(window, config)
+    config = config or {}
+    local name = config.Name or "SECTION"
+    local defaultExpanded = config.DefaultExpanded
+    if defaultExpanded == nil then defaultExpanded = true end
+    
+    local isExpanded = defaultExpanded
+    
+    -- Section header button
+    local sectionHeader = createInstance("TextButton", {
+        Size = UDim2.new(1, 0, 0, 24),
+        BackgroundTransparency = 1,
+        Text = "",
+        Parent = window.TabContainer
+    })
+    
+    -- Section label
+    local sectionLabel = createInstance("TextLabel", {
+        Size = UDim2.new(1, -20, 1, 0),
+        Position = UDim2.new(0, 4, 0, 0),
+        BackgroundTransparency = 1,
+        Text = string.upper(name),
+        TextColor3 = Theme.SectionHeader,
+        TextSize = 10,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = sectionHeader
+    })
+    
+    -- Collapse/expand chevron
+    local chevron = createInstance("TextLabel", {
+        Size = UDim2.new(0, 12, 0, 12),
+        Position = UDim2.new(1, -4, 0.5, 0),
+        AnchorPoint = Vector2.new(1, 0.5),
+        BackgroundTransparency = 1,
+        Text = "›",
+        TextColor3 = Theme.SectionHeader,
+        TextSize = 14,
+        Font = Enum.Font.GothamBold,
+        Rotation = isExpanded and 90 or 0,
+        Parent = sectionHeader
+    })
+    
+    -- Container for tabs in this section
+    local tabsContainer = createInstance("Frame", {
+        Size = UDim2.new(1, 0, 0, 0),
+        BackgroundTransparency = 1,
+        AutomaticSize = Enum.AutomaticSize.Y,
+        ClipsDescendants = not isExpanded,
+        Visible = isExpanded,
+        Parent = window.TabContainer
+    })
+    
+    createInstance("UIListLayout", {
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, Spacing.Xxs),
+        Parent = tabsContainer
+    })
+    
+    createInstance("UIPadding", {
+        PaddingLeft = UDim.new(0, Spacing.Sm),
+        Parent = tabsContainer
+    })
+    
+    local Section = {
+        Header = sectionHeader,
+        TabsContainer = tabsContainer,
+        IsExpanded = isExpanded,
+        Tabs = {}
+    }
+    
+    -- Toggle function
+    function Section:Toggle()
+        self.IsExpanded = not self.IsExpanded
+        
+        tween(chevron, {Rotation = self.IsExpanded and 90 or 0}, TweenPresets.Smooth)
+        
+        if self.IsExpanded then
+            tabsContainer.Visible = true
+            tabsContainer.ClipsDescendants = false
+        else
+            tabsContainer.ClipsDescendants = true
+            task.delay(0.22, function()
+                if not self.IsExpanded then
+                    tabsContainer.Visible = false
+                end
+            end)
+        end
+    end
+    
+    -- Add tab to this section
+    function Section:AddTab(tabConfig)
+        tabConfig = tabConfig or {}
+        local tabName = tabConfig.Name or "Tab"
+        local icon = tabConfig.Icon or ""
+        
+        local tabBtn = createInstance("TextButton", {
+            Size = UDim2.new(1, 0, 0, 32),
+            BackgroundColor3 = Theme.SurfaceAlt,
+            BackgroundTransparency = 1,
+            Text = "",
+            Parent = self.TabsContainer
+        })
+        addCorner(tabBtn, Radius.Control)
+        
+        local tabLabel = createInstance("TextLabel", {
+            Size = UDim2.new(1, -10, 1, 0),
+            Position = UDim2.new(0, icon ~= "" and 26 or 8, 0, 0),
+            BackgroundTransparency = 1,
+            Text = tabName,
+            TextColor3 = Theme.TextSoft,
+            TextSize = 12,
+            Font = Enum.Font.GothamMedium,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = tabBtn
+        })
+        
+        local tabIcon = nil
+        if icon ~= "" then
+            tabIcon = createInstance("ImageLabel", {
+                Size = UDim2.new(0, 16, 0, 16),
+                Position = UDim2.new(0, 6, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                BackgroundTransparency = 1,
+                Image = icon,
+                ImageColor3 = Theme.TextDim,
+                Parent = tabBtn
+            })
+        end
+        
+        local tabPage = createInstance("ScrollingFrame", {
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            ScrollBarThickness = 3,
+            ScrollBarImageColor3 = Theme.Accent,
+            Visible = false,
+            CanvasSize = UDim2.new(0, 0, 0, 0),
+            AutomaticSize = Enum.AutomaticSize.Y,
+            Parent = window.ContentContainer
+        })
+        
+        createInstance("UIListLayout", {
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, Spacing.Md),
+            Parent = tabPage
+        })
+        createInstance("UIPadding", {
+            PaddingTop = UDim.new(0, Spacing.Sm),
+            PaddingBottom = UDim.new(0, Spacing.Sm),
+            PaddingLeft = UDim.new(0, Spacing.Lg),
+            PaddingRight = UDim.new(0, Spacing.Lg),
+            Parent = tabPage
+        })
+        
+        local Tab = {
+            Button = tabBtn,
+            Page = tabPage,
+            Name = tabName,
+            Section = self
+        }
+        
+        tabBtn.MouseEnter:Connect(function()
+            if window.ActiveTab ~= Tab then
+                tween(tabBtn, {BackgroundTransparency = 0.82}, TweenPresets.Quick)
+                tween(tabLabel, {TextColor3 = Theme.Text}, TweenPresets.Quick)
+            end
+        end)
+        
+        tabBtn.MouseLeave:Connect(function()
+            if window.ActiveTab ~= Tab then
+                tween(tabBtn, {BackgroundTransparency = 1}, TweenPresets.Quick)
+                tween(tabLabel, {TextColor3 = Theme.TextSoft}, TweenPresets.Quick)
+            end
+        end)
+        
+        local function selectTab()
+            if window.ActiveTab then
+                window.ActiveTab.Page.Visible = false
+                tween(window.ActiveTab.Button, {BackgroundTransparency = 1}, TweenPresets.Quick)
+                local oldLabel = window.ActiveTab.Button:FindFirstChildOfClass("TextLabel")
+                if oldLabel then
+                    tween(oldLabel, {TextColor3 = Theme.TextSoft}, TweenPresets.Quick)
+                end
+            end
+            window.ActiveTab = Tab
+            tabPage.Visible = true
+            tween(tabBtn, {BackgroundTransparency = 0.68}, TweenPresets.Smooth)
+            tween(tabLabel, {TextColor3 = Theme.AccentGlow}, TweenPresets.Quick)
+        end
+        
+        tabBtn.MouseButton1Click:Connect(function()
+            playSound("Click")
+            selectTab()
+        end)
+        
+        registerTheme(function()
+            if tabBtn.Parent == nil then return end
+            tabLabel.TextColor3 = window.ActiveTab == Tab and Theme.AccentGlow or Theme.TextSoft
+            if tabIcon then
+                tabIcon.ImageColor3 = window.ActiveTab == Tab and Theme.AccentGlow or Theme.TextDim
+            end
+            tabPage.ScrollBarImageColor3 = Theme.Accent
+        end)
+        
+        -- Auto-select first tab
+        if #window.Tabs == 0 then
+            selectTab()
+        end
+        
+        table.insert(window.Tabs, Tab)
+        table.insert(self.Tabs, Tab)
+        return Tab
+    end
+    
+    -- Click to toggle
+    sectionHeader.MouseButton1Click:Connect(function()
+        playSound("Click")
+        Section:Toggle()
+    end)
+    
+    -- Hover effect
+    sectionHeader.MouseEnter:Connect(function()
+        tween(sectionLabel, {TextColor3 = Theme.Text}, TweenPresets.Quick)
+    end)
+    
+    sectionHeader.MouseLeave:Connect(function()
+        tween(sectionLabel, {TextColor3 = Theme.SectionHeader}, TweenPresets.Quick)
+    end)
+    
+    registerTheme(function()
+        if sectionHeader.Parent == nil then return end
+        sectionLabel.TextColor3 = Theme.SectionHeader
+        chevron.TextColor3 = Theme.SectionHeader
+    end)
+    
+    return Section
+end
+
+
 -- Section
 function AestheticUI:CreateSection(tab, name)
     local sectionName = name
@@ -1251,6 +1760,117 @@ function AestheticUI:CreateSection(tab, name)
 
     return {Frame = section, Content = contentFrame, AddHeaderAction = addHeaderAction}
 end
+
+-- Card Container (for visual grouping of features)
+function AestheticUI:CreateCard(section, config)
+    config = config or {}
+    local title = config.Title or ""
+    local description = config.Description or ""
+    
+    local card = createInstance("Frame", {
+        Size = UDim2.new(1, 0, 0, 0),
+        BackgroundColor3 = Theme.CardBg,
+        BackgroundTransparency = 0.15,
+        AutomaticSize = Enum.AutomaticSize.Y,
+        Parent = section.Content
+    })
+    addCorner(card, Radius.Card)
+    local cardStroke = addStroke(card, Theme.CardBorder, 1)
+    addInnerStroke(card, Theme.BorderSoft, 1)
+    addGlass(card)
+    addCardShadow(card)
+    
+    local hasHeader = title ~= "" or description ~= ""
+    local headerHeight = 0
+    
+    if hasHeader then
+        local header = createInstance("Frame", {
+            Size = UDim2.new(1, -16, 0, 0),
+            Position = UDim2.new(0, 8, 0, Spacing.Sm),
+            BackgroundTransparency = 1,
+            AutomaticSize = Enum.AutomaticSize.Y,
+            Parent = card
+        })
+        
+        if title ~= "" then
+            local titleLabel = createInstance("TextLabel", {
+                Size = UDim2.new(1, 0, 0, 18),
+                BackgroundTransparency = 1,
+                Text = title,
+                TextColor3 = Theme.Text,
+                TextSize = 13,
+                Font = Enum.Font.GothamBold,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Parent = header
+            })
+            headerHeight = headerHeight + 18
+            
+            registerTheme(function()
+                if titleLabel.Parent == nil then return end
+                titleLabel.TextColor3 = Theme.Text
+            end)
+        end
+        
+        if description ~= "" then
+            local descLabel = createInstance("TextLabel", {
+                Size = UDim2.new(1, 0, 0, 0),
+                Position = UDim2.new(0, 0, 0, title ~= "" and 20 or 0),
+                BackgroundTransparency = 1,
+                Text = description,
+                TextColor3 = Theme.TextSoft,
+                TextSize = 11,
+                Font = Enum.Font.Gotham,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextWrapped = true,
+                AutomaticSize = Enum.AutomaticSize.Y,
+                Parent = header
+            })
+            
+            registerTheme(function()
+                if descLabel.Parent == nil then return end
+                descLabel.TextColor3 = Theme.TextSoft
+            end)
+        end
+        
+        -- Separator line
+        createInstance("Frame", {
+            Size = UDim2.new(1, 0, 0, 1),
+            Position = UDim2.new(0, 0, 1, Spacing.Sm),
+            BackgroundColor3 = Theme.BorderSoft,
+            BorderSizePixel = 0,
+            Parent = header
+        })
+    end
+    
+    -- Content container
+    local contentFrame = createInstance("Frame", {
+        Size = UDim2.new(1, -16, 0, 0),
+        Position = UDim2.new(0, 8, 0, hasHeader and (headerHeight + Spacing.Md + Spacing.Sm) or Spacing.Sm),
+        BackgroundTransparency = 1,
+        AutomaticSize = Enum.AutomaticSize.Y,
+        Parent = card
+    })
+    
+    createInstance("UIListLayout", {
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, Spacing.Sm),
+        Parent = contentFrame
+    })
+    
+    createInstance("UIPadding", {
+        PaddingBottom = UDim.new(0, Spacing.Sm),
+        Parent = contentFrame
+    })
+    
+    registerTheme(function()
+        if card.Parent == nil then return end
+        card.BackgroundColor3 = Theme.CardBg
+        cardStroke.Color = Theme.CardBorder
+    end)
+    
+    return {Frame = card, Content = contentFrame, Header = hasHeader and header or nil}
+end
+
 
 -- Button
 function AestheticUI:CreateButton(section, config)
